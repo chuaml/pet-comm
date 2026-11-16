@@ -1,15 +1,20 @@
 import { html } from 'lit-html';
-import { buildGridSlots, COOLDOWN_OPTIONS, getColorPreset, GRID_DENSITIES } from '../utils/defaults.js';
+import {
+  buildGridSlots,
+  COOLDOWN_OPTIONS,
+  GRID_DENSITIES,
+  resolveButtonColors,
+} from '../utils/defaults.js';
 import { renderIcon } from './icons.js';
 import { lockButtonView } from './lock.js';
 
 function renderPetPad(btn, isFlashing, actions) {
-  const color = getColorPreset(btn.colorId);
+  const color = resolveButtonColors(btn);
+  const fgMode = btn.customColor && btn.customColor.fgMode !== 'custom' ? 'auto' : 'preset';
   const styleVars = `--pad-bg:${color.bg};--pad-fg:${color.fg};--pad-border:${color.border};--pad-ring:${color.ring};`;
 
   const onPointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault();
     actions.onPetPress(btn);
   };
 
@@ -25,6 +30,7 @@ function renderPetPad(btn, isFlashing, actions) {
       type="button"
       class="pet-pad"
       data-pressed=${isFlashing ? 'true' : 'false'}
+      data-fg-mode=${fgMode}
       style=${styleVars}
       aria-label=${btn.label}
       @pointerdown=${onPointerDown}
@@ -57,7 +63,8 @@ function renderParentSlot(btn, slotIdx, movingButtonId, actions) {
     `;
   }
 
-  const color = getColorPreset(btn.colorId);
+  const color = resolveButtonColors(btn);
+  const fgMode = btn.customColor && btn.customColor.fgMode !== 'custom' ? 'auto' : 'preset';
   const styleVars = `--pad-bg:${color.bg};--pad-fg:${color.fg};--pad-border:${color.border};`;
 
   return html`
@@ -65,6 +72,7 @@ function renderParentSlot(btn, slotIdx, movingButtonId, actions) {
       class="parent-slot parent-slot-filled"
       data-moving-source=${isSelectedSource ? 'true' : 'false'}
       data-move-target=${isMoveMode && !isSelectedSource ? 'true' : 'false'}
+      data-fg-mode=${fgMode}
       style=${styleVars}
     >
       <div class="parent-slot-top">
@@ -115,11 +123,13 @@ export function boardView(state, actions) {
                 <button
                   type="button"
                   class="audio-unlock-btn"
-                  @pointerdown=${(e) => {
-                    e.preventDefault();
-                    actions.onUnlockAudio();
+                  @pointerdown=${() => actions.onUnlockAudio()}
+                  @keydown=${(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      actions.onUnlockAudio();
+                    }
                   }}
-                  @click=${actions.onUnlockAudio}
                 >
                   ${renderIcon('volume', 'unlock-vol-svg')}
                   <span>
@@ -161,16 +171,12 @@ export function boardView(state, actions) {
           <div class="control-group" role="group" aria-label="Buttons per screen">
             <span class="control-caption">Grid:</span>
             ${GRID_DENSITIES.map(
-              (n) => html`
-                <button
-                  type="button"
-                  class="density-chip"
-                  aria-pressed=${density === n ? 'true' : 'false'}
-                  @click=${() => actions.onChangeDensity(n)}
-                >
-                  ${n}
-                </button>
-              `
+              (n) => html`<button
+                type="button"
+                class="density-chip"
+                aria-pressed=${density === n ? 'true' : 'false'}
+                @click=${() => actions.onChangeDensity(n)}
+              >${n}</button>`
             )}
           </div>
 
@@ -188,24 +194,22 @@ export function boardView(state, actions) {
             </select>
           </label>
 
+          <button type="button" class="toolbar-btn" @click=${actions.onAutoColorBoard}>
+            ${renderIcon('palette', 'btn-inline-svg')} Auto-Color
+          </button>
           <button type="button" class="toolbar-btn" @click=${actions.onOpenVoiceModal}>
             ${renderIcon('tune', 'btn-inline-svg')} Voice Tune
           </button>
-
           <button type="button" class="toolbar-btn" @click=${actions.onOpenActivityModal}>
             ${renderIcon('chart', 'btn-inline-svg')} Logs &amp; Backup
           </button>
-
           <button
             type="button"
             class="toolbar-btn"
             ?hidden=${!state.canInstallApp}
             aria-disabled=${state.installingApp ? 'true' : 'false'}
             @click=${actions.onInstallApp}
-          >
-            Install App
-          </button>
-
+          >Install App</button>
           <button type="button" class="toolbar-btn toolbar-btn-done" @click=${actions.onExitParentMode}>
             ${renderIcon('lock', 'btn-inline-svg')} Lock (Pet Mode)
           </button>

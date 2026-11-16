@@ -1,81 +1,89 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { resolveBestVoice, scoreSpeechVoice, speakTts } from '../src/audio/ttsVoice.js';
+import { describe, expect, it, vi } from 'vitest';
+import { cancelTts, resolveBestVoice, scoreSpeechVoice, speakTts } from '../src/audio/ttsVoice.js';
 import { matchVoicePresetId, normalizeVoiceSettings } from '../src/utils/presets.js';
 
-test('scoreSpeechVoice and resolveBestVoice prefer natural local human voices over novelty voices', () => {
-  const voices = [
-    { name: 'Zarvox', voiceURI: 'com.apple.speech.synthesis.voice.Zarvox', lang: 'en-US', localService: true },
-    { name: 'Fred', voiceURI: 'com.apple.speech.synthesis.voice.Fred', lang: 'en-US', localService: true },
-    { name: 'Thomas', voiceURI: 'fr-FR-thomas', lang: 'fr-FR', localService: true },
-    { name: 'Samantha', voiceURI: 'com.apple.voice.compact.en-US.Samantha', lang: 'en-US', localService: true },
-    { name: 'Samantha (Enhanced)', voiceURI: 'com.apple.voice.enhanced.en-US.Samantha', lang: 'en-US', localService: true },
-  ];
+describe('ttsVoice local-first ranking & race-free speech synthesis', () => {
+  it('prioritizes local offline OS voices over remote cloud streaming voices and novelty voices', () => {
+    const voices = [
+      { name: 'Zarvox', voiceURI: 'com.apple.speech.synthesis.voice.Zarvox', lang: 'en-US', localService: true },
+      { name: 'Google US English', voiceURI: 'Google US English', lang: 'en-US', localService: false },
+      { name: 'Microsoft Ava Online (Natural)', voiceURI: 'ava-cloud', lang: 'en-US', localService: false },
+      { name: 'Samantha', voiceURI: 'com.apple.voice.compact.en-US.Samantha', lang: 'en-US', localService: true },
+      { name: 'Samantha (Enhanced)', voiceURI: 'com.apple.voice.enhanced.en-US.Samantha', lang: 'en-US', localService: true },
+    ];
 
-  assert.ok(scoreSpeechVoice(voices[3], 'en-US') > scoreSpeechVoice(voices[0], 'en-US'));
-  assert.ok(scoreSpeechVoice(voices[4], 'en-US') > scoreSpeechVoice(voices[3], 'en-US'));
+    expect(scoreSpeechVoice(voices[3], 'en-US')).toBeGreaterThan(scoreSpeechVoice(voices[1], 'en-US'));
+    expect(scoreSpeechVoice(voices[3], 'en-US')).toBeGreaterThan(scoreSpeechVoice(voices[2], 'en-US'));
+    expect(scoreSpeechVoice(voices[4], 'en-US')).toBeGreaterThan(scoreSpeechVoice(voices[3], 'en-US'));
+    expect(scoreSpeechVoice(voices[3], 'en-US')).toBeGreaterThan(scoreSpeechVoice(voices[0], 'en-US'));
 
-  const autoPicked = resolveBestVoice(voices, 'auto', 'en-US');
-  assert.equal(autoPicked?.name, 'Samantha (Enhanced)');
+    expect(resolveBestVoice(voices, 'auto', 'en-US')?.name).toBe('Samantha (Enhanced)');
+    expect(resolveBestVoice(voices, 'ava-cloud', 'en-US')?.name).toBe('Microsoft Ava Online (Natural)');
+  });
 
-  const explicit = resolveBestVoice(voices, 'com.apple.voice.compact.en-US.Samantha', 'en-US');
-  assert.equal(explicit?.name, 'Samantha');
+  it('avoids idle cancel() race, resumes paused synth, delays 20ms when busy, and triggers fallback on stall', () => {
+    vi.useFakeTimers();
+    const utterances = [];
+    const cancelSpy = vi.fn();
+    const resumeSpy = vi.fn(function onResume() {
+      this.paused = false;
+    });
+    const mockVoice = { name: 'Samantha', voiceURI: 'samantha-local', lang: 'en-US', localService: true };
 
-  const missingFallback = resolveBestVoice(voices, 'non-existent-android-voice', 'en-US');
-  assert.equal(missingFallback?.name, 'Samantha (Enhanced)');
-});
-
-test('speakTts applies Soft & Warm defaults and custom prosody settings to SpeechSynthesisUtterance', (t) => {
-  const utterances = [];
-  const mockVoice = {
-    name: 'Ava (Premium)',
-    voiceURI: 'ava-premium',
-    lang: 'en-US',
-    localService: true,
-  };
-
-  globalThis.window = {
-    speechSynthesis: {
+    const mockSynth = {
+      speaking: false,
+      pending: false,
+      paused: true,
       getVoices: () => [mockVoice],
+      cancel: cancelSpy,
+      resume: resumeSpy,
       speak(u) {
         utterances.push(u);
       },
-    },
-  };
-  globalThis.SpeechSynthesisUtterance = class {
-    constructor(text) {
-      this.text = text;
-    }
-  };
-  t.after(() => {
-    delete globalThis.window;
-    delete globalThis.SpeechSynthesisUtterance;
+    };
+    vi.stubGlobal('speechSynthesis', mockSynth);
+    Object.defineProperty(window, 'speechSynthesis', { value: mockSynth, configurable: true });
+
+    const onFallback = vi.fn();
+    expect(speakTts('Okay', undefined, { stallTimeoutMs: 250, onFallback })).toBe(true);
+    expect(cancelSpy).not.toHaveBeenCalled();
+    expect(resumeSpy).toHaveBeenCalledTimes(1);
+    expect(utterances[0].pitch).toBe(1.2);
+    expect(utterances[0].rate).toBe(0.92);
+    expect(utterances[0].volume).toBe(0.8);
+
+    // Prompt onstart cancels watchdog fallback
+    utterances[0].onstart?.();
+    vi.advanceTimersByTime(300);
+    expect(onFallback).not.toHaveBeenCalled();
+
+    // Busy cutover waits 20ms after cancel() before speaking
+    mockSynth.speaking = true;
+    const onStallFallback = vi.fn();
+    speakTts('Water', undefined, { stallTimeoutMs: 250, onFallback: onStallFallback });
+    expect(cancelSpy).toHaveBeenCalledTimes(1);
+    expect(utterances).toHaveLength(1);
+
+    vi.advanceTimersByTime(20);
+    expect(utterances).toHaveLength(2);
+    expect(utterances[1].text).toBe('Water');
+
+    // Simulate stalled synthesis (>250ms with no onstart)
+    vi.advanceTimersByTime(260);
+    expect(onStallFallback).toHaveBeenCalledTimes(1);
+
+    cancelTts();
   });
 
-  assert.equal(speakTts('Okay'), true);
-  assert.equal(utterances.length, 1);
-  assert.equal(utterances[0].text, 'Okay');
-  assert.equal(utterances[0].voice, mockVoice);
-  assert.equal(utterances[0].pitch, 1.2);
-  assert.equal(utterances[0].rate, 0.92);
-  assert.equal(utterances[0].volume, 0.8);
-
-  assert.equal(
-    speakTts('Come', { voiceURI: 'auto', ttsPitch: 1.35, ttsRate: 1.0, ttsVolume: 0.85 }),
-    true
-  );
-  assert.equal(utterances[1].pitch, 1.35);
-  assert.equal(utterances[1].rate, 1.0);
-  assert.equal(utterances[1].volume, 0.85);
-});
-
-test('normalizeVoiceSettings clamps out-of-range values and matchVoicePresetId detects presets', () => {
-  const normalized = normalizeVoiceSettings({ ttsPitch: 9, ttsRate: 0.1, ttsVolume: -2, voiceURI: '' });
-  assert.equal(normalized.voiceURI, 'auto');
-  assert.equal(normalized.ttsPitch, 2.0);
-  assert.equal(normalized.ttsRate, 0.5);
-  assert.equal(normalized.ttsVolume, 0.1);
-
-  assert.equal(matchVoicePresetId({ ttsPitch: 1.2, ttsRate: 0.92, ttsVolume: 0.8 }), 'soft-warm');
-  assert.equal(matchVoicePresetId({ ttsPitch: 1.13, ttsRate: 0.92, ttsVolume: 0.8 }), null);
+  it('clamps out-of-range settings and matches voice presets', () => {
+    const normalized = normalizeVoiceSettings({ ttsPitch: 9, ttsRate: 0.1, ttsVolume: -2, voiceURI: '' });
+    expect(normalized).toEqual({
+      voiceURI: 'auto',
+      ttsPitch: 2.0,
+      ttsRate: 0.5,
+      ttsVolume: 0.1,
+    });
+    expect(matchVoicePresetId({ ttsPitch: 1.2, ttsRate: 0.92, ttsVolume: 0.8 })).toBe('soft-warm');
+    expect(matchVoicePresetId({ ttsPitch: 1.13, ttsRate: 0.92, ttsVolume: 0.8 })).toBeNull();
+  });
 });

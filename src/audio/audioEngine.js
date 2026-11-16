@@ -1,4 +1,5 @@
-import { speakTts } from './ttsVoice.js';
+import { playFallbackChime } from './chimeFallback.js';
+import { cancelTts, speakTts, warmSpeechVoices } from './ttsVoice.js';
 
 const SPLIT_PAW_GUARD_MS = 100;
 
@@ -32,6 +33,18 @@ export function isAudioUnlocked() {
   const Ctor = getAudioContextConstructor();
   if (!Ctor) return true;
   return Boolean(audioCtx && audioCtx.state === 'running');
+}
+
+export function resumeAudioContextSync() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return Promise.resolve(true);
+  if (ctx.state === 'suspended') {
+    return ctx
+      .resume()
+      .then(() => isAudioUnlocked())
+      .catch(() => false);
+  }
+  return Promise.resolve(isAudioUnlocked());
 }
 
 export async function decodeRawArrayBuffer(rawBuffer) {
@@ -80,6 +93,7 @@ export async function preloadAllAudio(audioMap) {
 }
 
 export async function unlockAudioEngine() {
+  warmSpeechVoices();
   const ctx = ensureAudioContext();
   if (ctx) {
     if (ctx.state === 'suspended') {
@@ -100,18 +114,6 @@ export async function unlockAudioEngine() {
     }
   }
 
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    try {
-      if (!window.speechSynthesis.speaking) {
-        const warmup = new SpeechSynthesisUtterance('');
-        warmup.volume = 0;
-        window.speechSynthesis.speak(warmup);
-      }
-    } catch {
-      // Ignore Safari/WebView speechSynthesis quirks
-    }
-  }
-
   for (const [buttonId, record] of pendingAudioMap.entries()) {
     if (!decodedBuffers.has(buttonId)) {
       await cacheButtonAudio(buttonId, record);
@@ -121,7 +123,7 @@ export async function unlockAudioEngine() {
   return isAudioUnlocked();
 }
 
-export function stopActiveAudio() {
+function stopActiveBufferOnly() {
   const ctx = audioCtx;
   if (activeSource && ctx) {
     try {
@@ -142,14 +144,11 @@ export function stopActiveAudio() {
     activeSource = null;
     activeGain = null;
   }
+}
 
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {
-      // Ignore
-    }
-  }
+export function stopActiveAudio() {
+  stopActiveBufferOnly();
+  cancelTts();
 }
 
 function playDecodedBuffer(audioBuffer) {
@@ -178,8 +177,12 @@ function playDecodedBuffer(audioBuffer) {
   return true;
 }
 
-export function speakTtsFallback(text, voiceSettings) {
-  return speakTts(text, voiceSettings);
+export function speakTtsFallback(text, voiceSettings, seedKey = text) {
+  const onFallback = () => {
+    playFallbackChime(ensureAudioContext(), seedKey, voiceSettings?.ttsVolume);
+  };
+  const spoke = speakTts(text, voiceSettings, { onFallback });
+  return spoke;
 }
 
 export function triggerButtonSound(button, options = {}) {
@@ -205,27 +208,36 @@ export function triggerButtonSound(button, options = {}) {
     lastPlayedByButton.set(button.id, now);
   }
 
-  stopActiveAudio();
+  stopActiveBufferOnly();
 
   const cached = button.hasAudio ? decodedBuffers.get(button.id) : null;
   if (cached && playDecodedBuffer(cached)) {
+    cancelTts();
     return { played: true, mode: 'buffer' };
   }
 
-  const spoke = speakTtsFallback(button.ttsText || button.label, options.voiceSettings);
-  return { played: spoke, mode: 'tts' };
+  const phrase = button.ttsText || button.label;
+  const spoke = speakTtsFallback(phrase, options.voiceSettings, button.id || phrase);
+  if (!spoke) {
+    const chimed = Boolean(ensureAudioContext());
+    return { played: chimed, mode: chimed ? 'chime' : 'tts' };
+  }
+  return { played: true, mode: 'tts' };
 }
 
 export async function previewAudioPayload(audioPayload, fallbackText, voiceSettings) {
-  stopActiveAudio();
+  stopActiveBufferOnly();
   if (audioPayload && (audioPayload.buffer || audioPayload.blob)) {
     try {
       const raw = audioPayload.buffer || (await audioPayload.blob.arrayBuffer());
       const decoded = await decodeRawArrayBuffer(raw);
-      if (decoded && playDecodedBuffer(decoded)) return true;
+      if (decoded && playDecodedBuffer(decoded)) {
+        cancelTts();
+        return true;
+      }
     } catch {
       // Fall back to TTS below
     }
   }
-  return speakTtsFallback(fallbackText, voiceSettings);
+  return speakTtsFallback(fallbackText, voiceSettings, fallbackText);
 }

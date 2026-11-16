@@ -1,84 +1,155 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import { describe, expect, it, vi } from 'vitest';
 import { triggerButtonSound } from '../src/audio/audioEngine.js';
-import { appendActivityLog, clearActivityLogs, initStorage, saveSettings } from '../src/storage/db.js';
+import { playFallbackChime } from '../src/audio/chimeFallback.js';
+import { encodeMonoWav } from '../src/audio/wavUtils.js';
+import {
+  appendActivityLog,
+  clearActivityLogs,
+  deleteButton,
+  initStorage,
+  replaceAllData,
+  resetStorageForTests,
+  saveButtons,
+  saveButtonWithAudio,
+  saveSettings,
+} from '../src/storage/db.js';
 
-test('triggerButtonSound enforces split-paw guard, cooldown, and forwards voiceSettings', async (t) => {
-  const utterances = [];
-  globalThis.window = {
-    speechSynthesis: {
+describe('audioEngine guards, chime fallback & real IndexedDB persistence', () => {
+  it('enforces 100ms split-paw guard, per-button cooldown, and forwards voiceSettings', () => {
+    vi.useFakeTimers();
+    const utterances = [];
+    const mockSynth = {
       speaking: false,
+      pending: false,
+      paused: false,
       getVoices: () => [],
-      cancel() {},
+      cancel: vi.fn(),
       speak(u) {
         utterances.push(u);
       },
-    },
-  };
-  globalThis.SpeechSynthesisUtterance = class {
-    constructor(text) {
-      this.text = text;
-    }
-  };
-  t.after(() => {
-    delete globalThis.window;
-    delete globalThis.SpeechSynthesisUtterance;
+    };
+    Object.defineProperty(window, 'speechSynthesis', { value: mockSynth, configurable: true });
+
+    const btnA = { id: 'btn-a', label: 'Outside', ttsText: 'Outside', hasAudio: false };
+    const btnB = { id: 'btn-b', label: 'OK', ttsText: 'Okay', hasAudio: false };
+    const voiceSettings = { voiceURI: 'auto', ttsPitch: 1.25, ttsRate: 0.9, ttsVolume: 0.75 };
+
+    expect(triggerButtonSound(btnA, { cooldownMs: 400, voiceSettings }).played).toBe(true);
+    expect(utterances[0].pitch).toBe(1.25);
+    expect(utterances[0].rate).toBe(0.9);
+    expect(utterances[0].volume).toBe(0.75);
+
+    const splitPaw = triggerButtonSound(btnB, { cooldownMs: 400, voiceSettings });
+    expect(splitPaw).toEqual({ played: false, reason: 'split-paw' });
+
+    vi.advanceTimersByTime(120);
+
+    const cooldownBlocked = triggerButtonSound(btnA, { cooldownMs: 400, voiceSettings });
+    expect(cooldownBlocked).toEqual({ played: false, reason: 'cooldown' });
+
+    expect(triggerButtonSound(btnB, { cooldownMs: 400, voiceSettings }).played).toBe(true);
+    expect(utterances.map((u) => u.text)).toEqual(['Outside', 'Okay']);
   });
 
-  const btnA = { id: 'btn-a', label: 'Outside', ttsText: 'Outside', hasAudio: false };
-  const btnB = { id: 'btn-b', label: 'OK', ttsText: 'Okay', hasAudio: false };
-  const voiceSettings = { voiceURI: 'auto', ttsPitch: 1.25, ttsRate: 0.9, ttsVolume: 0.75 };
+  it('synthesizes a pentatonic Web Audio chime when playFallbackChime is invoked', () => {
+    const startSpy = vi.fn();
+    const stopSpy = vi.fn();
+    const mockCtx = {
+      state: 'running',
+      currentTime: 1.0,
+      destination: {},
+      createGain: () => ({
+        gain: {
+          setValueAtTime: vi.fn(),
+          linearRampToValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+      }),
+      createOscillator: () => ({
+        type: 'sine',
+        frequency: { setValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        start: startSpy,
+        stop: stopSpy,
+      }),
+    };
 
-  const first = triggerButtonSound(btnA, { cooldownMs: 400, voiceSettings });
-  assert.equal(first.played, true);
-  assert.equal(utterances[0].pitch, 1.25);
-  assert.equal(utterances[0].rate, 0.9);
-  assert.equal(utterances[0].volume, 0.75);
-
-  const splitPaw = triggerButtonSound(btnB, { cooldownMs: 400, voiceSettings });
-  assert.equal(splitPaw.played, false);
-  assert.equal(splitPaw.reason, 'split-paw');
-
-  await new Promise((r) => setTimeout(r, 120));
-
-  const cooldownBlocked = triggerButtonSound(btnA, { cooldownMs: 400, voiceSettings });
-  assert.equal(cooldownBlocked.played, false);
-  assert.equal(cooldownBlocked.reason, 'cooldown');
-
-  const secondButtonAllowed = triggerButtonSound(btnB, { cooldownMs: 400, voiceSettings });
-  assert.equal(secondButtonAllowed.played, true);
-  assert.deepEqual(
-    utterances.map((u) => u.text),
-    ['Outside', 'Okay']
-  );
-});
-
-test('storage memory fallback seeds 16-slot defaults, persists voice settings, and logs activity', async () => {
-  const initial = await initStorage();
-  assert.equal(initial.buttons.length, 14);
-  assert.equal(initial.settings.gridDensity, 16);
-  assert.equal(initial.settings.ttsPitch, 1.2);
-  assert.equal(initial.settings.ttsRate, 0.92);
-  assert.equal(initial.settings.ttsVolume, 0.8);
-
-  await saveSettings({
-    gridDensity: 20,
-    cooldownMs: 1000,
-    voiceURI: 'Samantha',
-    ttsPitch: 1.35,
-    ttsRate: 1.0,
-    ttsVolume: 0.85,
+    expect(playFallbackChime(mockCtx, 'btn-play', 0.8)).toBe(true);
+    expect(startSpy).toHaveBeenCalledTimes(2);
+    expect(stopSpy).toHaveBeenCalledTimes(2);
   });
-  await appendActivityLog({ buttonId: 'btn-sit', label: 'Sit', timestamp: 12345 });
 
-  const reloaded = await initStorage();
-  assert.equal(reloaded.settings.gridDensity, 20);
-  assert.equal(reloaded.settings.voiceURI, 'Samantha');
-  assert.equal(reloaded.settings.ttsPitch, 1.35);
-  assert.equal(reloaded.logs.length, 1);
-  assert.equal(reloaded.logs[0].label, 'Sit');
+  it('persists buttons, WAV audio blobs, settings, logs, and full restores in real IndexedDB', async () => {
+    const seeded = await initStorage();
+    expect(seeded.buttons).toHaveLength(14);
+    expect(seeded.settings.gridDensity).toBe(16);
 
-  await clearActivityLogs();
-  const afterClear = await initStorage();
-  assert.equal(afterClear.logs.length, 0);
+    await saveSettings({
+      gridDensity: 20,
+      cooldownMs: 750,
+      voiceURI: 'Samantha',
+      ttsPitch: 1.35,
+      ttsRate: 1.0,
+      ttsVolume: 0.85,
+    });
+
+    const wavBuffer = encodeMonoWav(new Float32Array([0.2, -0.2, 0.5, -0.5]), 24000);
+    const customBtn = {
+      id: 'btn-custom-1',
+      label: 'Park',
+      ttsText: 'Dog Park',
+      colorId: 'emerald-green',
+      customColor: { bgHex: '#2AA898', fgMode: 'auto', fgHex: '#0B1F3A' },
+      iconId: 'paw',
+      slotIndex: 14,
+      hasAudio: true,
+      updatedAt: 9999,
+    };
+    await saveButtonWithAudio(customBtn, {
+      buffer: wavBuffer,
+      blob: new Blob([wavBuffer], { type: 'audio/wav' }),
+      mimeType: 'audio/wav',
+      durationMs: 320,
+    });
+    await appendActivityLog({ buttonId: 'btn-custom-1', label: 'Park', timestamp: 50000 });
+
+    const reloaded = await initStorage();
+    expect(reloaded.settings.gridDensity).toBe(20);
+    expect(reloaded.settings.voiceURI).toBe('Samantha');
+    expect(reloaded.buttons).toHaveLength(15);
+    expect(reloaded.audioMap.get('btn-custom-1')?.durationMs).toBe(320);
+    expect(reloaded.logs[0].label).toBe('Park');
+
+    await deleteButton('btn-custom-1');
+    await clearActivityLogs();
+    const afterDelete = await initStorage();
+    expect(afterDelete.buttons).toHaveLength(14);
+    expect(afterDelete.audioMap.has('btn-custom-1')).toBe(false);
+    expect(afterDelete.logs).toHaveLength(0);
+
+    await saveButtons(afterDelete.buttons.slice(0, 2));
+    await replaceAllData({
+      settings: { gridDensity: 4, cooldownMs: 500 },
+      buttons: [customBtn],
+      audioEntries: [{ buttonId: customBtn.id, buffer: wavBuffer, mimeType: 'audio/wav', durationMs: 320 }],
+      logs: [{ buttonId: customBtn.id, label: 'Park', timestamp: 77777 }],
+    });
+    const replaced = await initStorage();
+    expect(replaced.settings.gridDensity).toBe(4);
+    expect(replaced.buttons).toHaveLength(1);
+    expect(replaced.audioMap.has(customBtn.id)).toBe(true);
+    expect(replaced.logs).toHaveLength(1);
+  });
+
+  it('falls back cleanly to in-memory storage when indexedDB is unavailable', async () => {
+    await resetStorageForTests();
+    vi.stubGlobal('indexedDB', undefined);
+
+    const hydrated = await initStorage();
+    expect(hydrated.buttons).toHaveLength(14);
+    await saveSettings({ gridDensity: 9, cooldownMs: 500 });
+    const check = await initStorage();
+    expect(check.settings.gridDensity).toBe(9);
+  });
 });

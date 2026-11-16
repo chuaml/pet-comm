@@ -1,3 +1,4 @@
+import { normalizeCustomColor } from '../utils/colors.js';
 import {
   getColorPreset,
   isValidIconId,
@@ -49,6 +50,7 @@ export async function serializeBackup({ settings, buttons, audioMap, logs = [] }
       label: btn.label,
       ttsText: btn.ttsText || btn.label,
       colorId: btn.colorId,
+      customColor: normalizeCustomColor(btn.customColor),
       iconId: btn.iconId,
       slotIndex: btn.slotIndex,
       updatedAt: btn.updatedAt || Date.now(),
@@ -133,6 +135,7 @@ export function parseAndValidateBackup(jsonString) {
       label,
       ttsText: String(raw.ttsText || label).trim().slice(0, 80) || label,
       colorId: getColorPreset(raw.colorId).id,
+      customColor: normalizeCustomColor(raw.customColor),
       iconId: isValidIconId(raw.iconId) ? raw.iconId : PET_ICONS[0].id,
       slotIndex,
       hasAudio,

@@ -1,6 +1,7 @@
 import { html } from 'lit-html';
 import { isRecordingSupported } from '../audio/recorder.js';
-import { PET_COLORS, PET_ICONS } from '../utils/defaults.js';
+import { PET_ICONS } from '../utils/defaults.js';
+import { colorPickerView } from './colorPickerView.js';
 import { renderIcon } from './icons.js';
 import { presetPickerView } from './presetPickerView.js';
 
@@ -69,34 +70,7 @@ export function editorDialogView(state, actions) {
                 </div>
               </div>
 
-              <fieldset class="choice-fieldset">
-                <legend>Pet-Vision Color (Canine/Feline High Contrast)</legend>
-                <div class="color-swatch-grid">
-                  ${PET_COLORS.map(
-                    (color) => html`
-                      <div class="radio-tile-wrap">
-                        <input
-                          class="visually-hidden"
-                          type="radio"
-                          id=${`color-${color.id}`}
-                          name="colorId"
-                          value=${color.id}
-                          .checked=${draft.colorId === color.id}
-                          @change=${() => actions.onUpdateDraft({ colorId: color.id })}
-                        />
-                        <label
-                          class="color-swatch-label"
-                          for=${`color-${color.id}`}
-                          style=${`--sw-bg:${color.bg};--sw-fg:${color.fg};--sw-border:${color.border};`}
-                        >
-                          <span class="swatch-dot" aria-hidden="true"></span>
-                          <span>${color.name}</span>
-                        </label>
-                      </div>
-                    `
-                  )}
-                </div>
-              </fieldset>
+              ${colorPickerView(draft, actions)}
 
               <fieldset class="choice-fieldset">
                 <legend>Geometric Shape / Icon</legend>

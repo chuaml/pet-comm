@@ -1,4 +1,7 @@
+import { getColorPreset, PET_COLORS, resolveButtonColors } from './colors.js';
 import { BUTTON_TYPE_PRESETS, DEFAULT_VOICE_SETTINGS, normalizeVoiceSettings } from './presets.js';
+
+export { getColorPreset, PET_COLORS, resolveButtonColors };
 
 export const GRID_DENSITIES = [4, 9, 12, 16, 20];
 export const COOLDOWN_OPTIONS = [250, 500, 750, 1000, 1500];
@@ -32,49 +35,6 @@ export function normalizeSettings(raw) {
   };
 }
 
-export const PET_COLORS = Object.freeze([
-  {
-    id: 'royal-blue',
-    name: 'Royal Blue',
-    bg: '#0057B8',
-    fg: '#FFFFFF',
-    border: '#93C5FD',
-    ring: '#FFD600',
-  },
-  {
-    id: 'bright-yellow',
-    name: 'Bright Yellow',
-    bg: '#FFD600',
-    fg: '#0B1F3A',
-    border: '#0B1F3A',
-    ring: '#0057B8',
-  },
-  {
-    id: 'dark-navy',
-    name: 'Dark Navy',
-    bg: '#0B1F3A',
-    fg: '#FFD600',
-    border: '#60A5FA',
-    ring: '#FFD600',
-  },
-  {
-    id: 'light-gray',
-    name: 'Light Gray',
-    bg: '#CBD5E1',
-    fg: '#0B1F3A',
-    border: '#334155',
-    ring: '#0057B8',
-  },
-  {
-    id: 'crisp-white',
-    name: 'White',
-    bg: '#FFFFFF',
-    fg: '#0B1F3A',
-    border: '#0057B8',
-    ring: '#0057B8',
-  },
-]);
-
 export const PET_ICONS = Object.freeze([
   { id: 'door', name: 'Door' },
   { id: 'bowl', name: 'Food Bowl' },
@@ -96,10 +56,6 @@ export const PET_ICONS = Object.freeze([
   { id: 'hexagon', name: 'Hexagon' },
 ]);
 
-export function getColorPreset(colorId) {
-  return PET_COLORS.find((c) => c.id === colorId) || PET_COLORS[0];
-}
-
 export function isValidIconId(iconId) {
   return PET_ICONS.some((icon) => icon.id === iconId);
 }
@@ -110,6 +66,7 @@ export function createDefaultButtons(now = Date.now()) {
     label: preset.label,
     ttsText: preset.ttsText,
     colorId: preset.colorId,
+    customColor: null,
     iconId: preset.iconId,
     slotIndex: idx,
     hasAudio: false,

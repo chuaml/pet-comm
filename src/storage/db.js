@@ -224,3 +224,12 @@ export async function replaceAllData({ settings, buttons, audioEntries, logs }) 
   }
   await txDone(tx);
 }
+
+export async function resetStorageForTests() {
+  dbPromise = null;
+  mem.initialized = false;
+  mem.settings = { ...DEFAULT_SETTINGS };
+  mem.buttons.clear();
+  mem.audio.clear();
+  mem.logs = [];
+}

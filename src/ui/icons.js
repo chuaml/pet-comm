@@ -79,6 +79,13 @@ const PATHS = {
     <circle cx="66" cy="50" r="9" fill="currentColor"/>
     <circle cx="44" cy="72" r="9" fill="currentColor"/>
   `,
+  palette: svg`
+    <path d="M50 12C28 12 10 29 10 50c0 20 16 36 36 36h8a10 10 0 0 0 10-10c0-3-1.2-5.5-3-7.4-1.6-1.8-2.4-3.8-2.4-6.1 0-5 4-9 9-9h8C83.5 53.5 90 46 90 37 90 22.5 72 12 50 12Z" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/>
+    <circle cx="31" cy="44" r="5.5" fill="currentColor"/>
+    <circle cx="43" cy="29" r="5.5" fill="currentColor"/>
+    <circle cx="61" cy="29" r="5.5" fill="currentColor"/>
+    <circle cx="72" cy="41" r="5.5" fill="currentColor"/>
+  `,
   lock: svg`
     <rect x="22" y="44" width="56" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="8"/>
     <path d="M34 44V30a16 16 0 0 1 32 0v14" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>

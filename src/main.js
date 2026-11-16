@@ -2,11 +2,12 @@ import { html, render } from 'lit-html';
 import {
   isAudioUnlocked,
   preloadAllAudio,
+  resumeAudioContextSync,
   stopActiveAudio,
   triggerButtonSound,
   unlockAudioEngine,
 } from './audio/audioEngine.js';
-import { listAvailableVoices, subscribeVoicesChanged } from './audio/ttsVoice.js';
+import { listAvailableVoices, subscribeVoicesChanged, warmSpeechVoices } from './audio/ttsVoice.js';
 import { appendActivityLog, initStorage, saveButtons, saveSettings } from './storage/db.js';
 import './style.css';
 import './styles/lock.css';
@@ -14,6 +15,7 @@ import './styles/parent.css';
 import './styles/dialogs.css';
 import './styles/activity.css';
 import './styles/voiceAndPresets.css';
+import './styles/colorPicker.css';
 import { createActivityActions } from './ui/activityController.js';
 import { activityDialogView, installLightDismissFallback } from './ui/activityModal.js';
 import { boardView } from './ui/board.js';
@@ -22,6 +24,7 @@ import { createEditorActions } from './ui/editorController.js';
 import { createHoldUnlockController } from './ui/lock.js';
 import { createVoiceActions } from './ui/voiceController.js';
 import { voiceDialogView } from './ui/voiceModal.js';
+import { autoColorBoardButtons } from './utils/autoColor.js';
 import { DEFAULT_SETTINGS, swapOrMoveButtonSlot } from './utils/defaults.js';
 
 const appRoot = document.getElementById('app');
@@ -124,7 +127,9 @@ const actions = {
 
   async onPetPress(btn) {
     if (!state.audioUnlocked) {
-      unlockAudioEngine().then((unlocked) => setState({ audioUnlocked: unlocked }));
+      resumeAudioContextSync().then((unlocked) => {
+        if (unlocked !== state.audioUnlocked) setState({ audioUnlocked: unlocked });
+      });
     }
     syncWakeLock();
     const outcome = triggerButtonSound(btn, {
@@ -170,8 +175,16 @@ const actions = {
     await saveSettings(settings);
   },
 
-  onPreviewButton: (btn) =>
-    triggerButtonSound(btn, { bypassGuards: true, voiceSettings: state.settings }),
+  async onAutoColorBoard() {
+    const recolored = autoColorBoardButtons(state.buttons, state.settings.gridDensity);
+    setState({ buttons: recolored, movingButtonId: null });
+    await saveButtons(recolored);
+  },
+
+  onPreviewButton: (btn) => {
+    if (!state.audioUnlocked) resumeAudioContextSync();
+    return triggerButtonSound(btn, { bypassGuards: true, voiceSettings: state.settings });
+  },
   onStartMove: (buttonId) => setState({ movingButtonId: buttonId }),
   onCancelMove: () => setState({ movingButtonId: null }),
 
@@ -213,9 +226,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
 document.addEventListener('visibilitychange', () => syncWakeLock());
 
 async function bootstrap() {
+  warmSpeechVoices();
+  subscribeVoicesChanged((availableVoices) => setState({ availableVoices }));
   const hydrated = await initStorage();
   await preloadAllAudio(hydrated.audioMap);
-  subscribeVoicesChanged((availableVoices) => setState({ availableVoices }));
   setState({
     settings: hydrated.settings,
     buttons: hydrated.buttons,

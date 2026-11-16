@@ -6,8 +6,11 @@ import {
 } from '../audio/audioEngine.js';
 import { createVoiceRecorder } from '../audio/recorder.js';
 import { deleteButton, saveButtonWithAudio } from '../storage/db.js';
-import { PET_COLORS, PET_ICONS } from '../utils/defaults.js';
+import { pickSmartColorForSlot } from '../utils/autoColor.js';
+import { normalizeCustomColor } from '../utils/colors.js';
+import { PET_ICONS } from '../utils/defaults.js';
 import { getButtonPreset } from '../utils/presets.js';
+import { createColorDraftActions } from './colorPickerView.js';
 
 export function createEditorActions(state, setState) {
   let activeRecorder = null;
@@ -18,10 +21,10 @@ export function createEditorActions(state, setState) {
     setState({ editorDraft: { ...state.editorDraft, ...patch } });
   };
 
+  const colorDraftActions = createColorDraftActions(() => state.editorDraft, updateDraft);
+
   const cancelActiveRecording = () => {
-    if (activeRecorder?.isActive()) {
-      activeRecorder.cancel();
-    }
+    if (activeRecorder?.isActive()) activeRecorder.cancel();
     activeRecorder = null;
   };
 
@@ -29,7 +32,7 @@ export function createEditorActions(state, setState) {
     cancelActiveRecording,
 
     onOpenCreateModal(slotIndex) {
-      const color = PET_COLORS[slotIndex % PET_COLORS.length];
+      const colorId = pickSmartColorForSlot(state.buttons, slotIndex, state.settings.gridDensity);
       const icon = PET_ICONS[slotIndex % PET_ICONS.length];
       setState({
         editorDraft: {
@@ -39,7 +42,8 @@ export function createEditorActions(state, setState) {
           initialLabel: '',
           label: '',
           ttsText: '',
-          colorId: color.id,
+          colorId,
+          customColor: null,
           iconId: icon.id,
           hasAudio: false,
           audioDurationMs: 0,
@@ -63,6 +67,7 @@ export function createEditorActions(state, setState) {
           label: btn.label,
           ttsText: btn.ttsText || btn.label,
           colorId: btn.colorId,
+          customColor: normalizeCustomColor(btn.customColor),
           iconId: btn.iconId,
           hasAudio: Boolean(btn.hasAudio && audioRec),
           audioDurationMs: audioRec?.durationMs || 0,
@@ -84,9 +89,12 @@ export function createEditorActions(state, setState) {
         label: preset.label,
         ttsText: preset.ttsText,
         colorId: preset.colorId,
+        customColor: null,
         iconId: preset.iconId,
       });
     },
+
+    ...colorDraftActions,
 
     onCloseEditor() {
       cancelActiveRecording();
@@ -114,7 +122,7 @@ export function createEditorActions(state, setState) {
       activeRecorder = createVoiceRecorder({
         maxDurationMs: 5000,
         onTick: (elapsed) => updateDraft({ recordingElapsedMs: elapsed }),
-        onFinish: (audioResult) => {
+        onFinish: (audioResult) =>
           updateDraft({
             isRecording: false,
             recordingElapsedMs: 0,
@@ -122,28 +130,25 @@ export function createEditorActions(state, setState) {
             audioDurationMs: audioResult.durationMs,
             pendingAudio: audioResult,
             recordError: '',
-          });
-        },
-        onError: (err) => {
+          }),
+        onError: (err) =>
           updateDraft({
             isRecording: false,
             recordingElapsedMs: 0,
             recordError: err?.message || 'Microphone access was denied or unavailable.',
-          });
-        },
+          }),
       });
       updateDraft({ isRecording: true, recordingElapsedMs: 0, recordError: '' });
-      activeRecorder.start().catch((err) => {
+      activeRecorder.start().catch((err) =>
         updateDraft({
           isRecording: false,
           recordError: err?.message || 'Could not start microphone recording.',
-        });
-      });
+        })
+      );
     },
 
     onRecordPointerUp() {
-      if (!activeRecorder?.isActive()) return;
-      if (Date.now() - recordPressStartedAt >= 300) {
+      if (activeRecorder?.isActive() && Date.now() - recordPressStartedAt >= 300) {
         activeRecorder.stop();
       }
     },
@@ -165,23 +170,16 @@ export function createEditorActions(state, setState) {
           : draft.hasAudio
             ? state.audioMap.get(draft.id)
             : null;
-      previewAudioPayload(
-        payload,
-        draft.ttsText || draft.label || 'Button',
-        state.settings
-      );
+      previewAudioPayload(payload, draft.ttsText || draft.label || 'Button', state.settings);
     },
 
-    onClearDraftAudio() {
-      updateDraft({ hasAudio: false, audioDurationMs: 0, pendingAudio: null });
-    },
+    onClearDraftAudio: () => updateDraft({ hasAudio: false, audioDurationMs: 0, pendingAudio: null }),
 
     async onSaveEditor(e) {
       e.preventDefault();
       const draft = state.editorDraft;
       if (!draft) return;
       cancelActiveRecording();
-
       const cleanLabel = draft.label.trim();
       if (!cleanLabel) return;
 
@@ -190,6 +188,7 @@ export function createEditorActions(state, setState) {
         label: cleanLabel,
         ttsText: draft.ttsText.trim() || cleanLabel,
         colorId: draft.colorId,
+        customColor: normalizeCustomColor(draft.customColor),
         iconId: draft.iconId,
         slotIndex: draft.slotIndex,
         hasAudio: Boolean(draft.hasAudio),

@@ -2,23 +2,17 @@
 
 ## audio tune
 
-- [x] More human voice from button sounds (smart local Web Speech voice ranking)
-- [x] Higher and softer default sound (`Soft & Warm`: pitch `1.20×`, rate `0.92×`, volume `80%`)
-- [x] Global Voice Tune settings dialog in Parent Mode (tone presets, system voice picker, pitch/speed/volume sliders, live preview, IndexedDB & backup persistence)
+- [x] Identified and fixed all 4 button audio delay & dropped speech root causes:
+  - [x] Strictly prioritize local offline OS voices (`localService: true`) over slow/flaky remote cloud streaming TTS voices
+  - [x] Eliminate idle `speechSynthesis.cancel()` + `speak()` IPC race, resume `paused` state, and hold strong `activeUtterance` reference
+  - [x] Remove first-press `unlockAudioEngine()` empty-utterance collision and `e.preventDefault()` gesture block on `.pet-pad` `pointerdown`, plus pre-warm `speechSynthesis.getVoices()` on app boot
+  - [x] Add automatic Web Audio pentatonic chime fallback if OS TTS is unavailable or stalls `>250ms`
 
 ## button types
 
-- [x] Expanded grid densities (`4`, `9`, `12`, `16`, `20`) starting with `16` slots by default
-- [x] Quick-pick Button Type presets & custom inline SVG icons (`Outside`, `Treat`, plus all 12 types below):
-  - [x] sit
-  - [x] stay
-  - [x] play
-  - [x] eat
-  - [x] water
-  - [x] no
-  - [x] ok
-  - [x] frisbee
-  - [x] ball
-  - [x] up
-  - [x] down
-  - [x] come
+- [x] More color customization:
+  - [x] Expanded pre-made color palette to 18 WCAG high-contrast swatches
+  - [x] Added Custom Full RGB controls (`R/G/B` `0–255` sliders + color picker + `#HEX` input) for Button Background with auto high-contrast Text & Border plus optional Text/Icon RGB override
+- [x] Smart non-repeating automatic coloring:
+  - [x] Unique non-repeating colors across all 14 starter Button Type presets
+  - [x] 2D neighbor-aware + least-used + perceptual-distance auto-coloring when creating buttons and via one-tap Parent Mode **Auto-Color** button (preserving Custom RGB buttons)

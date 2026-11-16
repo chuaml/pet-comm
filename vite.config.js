@@ -56,4 +56,15 @@ export default defineConfig({
     assetsInlineLimit: 0,
   },
   plugins: [injectServiceWorkerManifest()],
+  test: {
+    pool: 'vmThreads',
+    environment: 'happy-dom',
+    setupFiles: ['./tests/setup.js'],
+    include: ['tests/**/*.test.js'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.js'],
+      reporter: ['text', 'html'],
+    },
+  },
 });

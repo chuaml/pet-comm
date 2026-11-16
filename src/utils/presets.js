@@ -72,19 +72,19 @@ export function matchVoicePresetId(settings) {
 
 export const BUTTON_TYPE_PRESETS = Object.freeze([
   { id: 'outside', label: 'Outside', ttsText: 'Outside', iconId: 'door', colorId: 'royal-blue' },
-  { id: 'eat', label: 'Eat', ttsText: 'Eat', iconId: 'bowl', colorId: 'bright-yellow' },
-  { id: 'water', label: 'Water', ttsText: 'Water', iconId: 'water', colorId: 'dark-navy' },
-  { id: 'treat', label: 'Treat', ttsText: 'Treat', iconId: 'bone', colorId: 'crisp-white' },
+  { id: 'eat', label: 'Eat', ttsText: 'Eat', iconId: 'bowl', colorId: 'warm-amber' },
+  { id: 'water', label: 'Water', ttsText: 'Water', iconId: 'water', colorId: 'sky-cyan' },
+  { id: 'treat', label: 'Treat', ttsText: 'Treat', iconId: 'bone', colorId: 'vivid-purple' },
   { id: 'play', label: 'Play', ttsText: 'Play', iconId: 'paw', colorId: 'bright-yellow' },
-  { id: 'ball', label: 'Ball', ttsText: 'Ball', iconId: 'ball', colorId: 'royal-blue' },
-  { id: 'frisbee', label: 'Frisbee', ttsText: 'Frisbee', iconId: 'frisbee', colorId: 'light-gray' },
-  { id: 'come', label: 'Come', ttsText: 'Come', iconId: 'come', colorId: 'dark-navy' },
-  { id: 'sit', label: 'Sit', ttsText: 'Sit', iconId: 'sit', colorId: 'dark-navy' },
-  { id: 'stay', label: 'Stay', ttsText: 'Stay', iconId: 'stay', colorId: 'crisp-white' },
-  { id: 'up', label: 'Up', ttsText: 'Up', iconId: 'up', colorId: 'royal-blue' },
-  { id: 'down', label: 'Down', ttsText: 'Down', iconId: 'down', colorId: 'bright-yellow' },
-  { id: 'ok', label: 'OK', ttsText: 'Okay', iconId: 'ok', colorId: 'bright-yellow' },
-  { id: 'no', label: 'No', ttsText: 'No', iconId: 'no', colorId: 'dark-navy' },
+  { id: 'ball', label: 'Ball', ttsText: 'Ball', iconId: 'ball', colorId: 'teal-mint' },
+  { id: 'frisbee', label: 'Frisbee', ttsText: 'Frisbee', iconId: 'frisbee', colorId: 'tangerine' },
+  { id: 'come', label: 'Come', ttsText: 'Come', iconId: 'come', colorId: 'indigo-night' },
+  { id: 'sit', label: 'Sit', ttsText: 'Sit', iconId: 'sit', colorId: 'aqua-ice' },
+  { id: 'stay', label: 'Stay', ttsText: 'Stay', iconId: 'stay', colorId: 'rose-berry' },
+  { id: 'up', label: 'Up', ttsText: 'Up', iconId: 'up', colorId: 'fresh-lime' },
+  { id: 'down', label: 'Down', ttsText: 'Down', iconId: 'down', colorId: 'soft-lavender' },
+  { id: 'ok', label: 'OK', ttsText: 'Okay', iconId: 'ok', colorId: 'emerald-green' },
+  { id: 'no', label: 'No', ttsText: 'No', iconId: 'no', colorId: 'coral-red' },
 ]);
 
 export function getButtonPreset(presetId) {

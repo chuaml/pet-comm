@@ -1,4 +1,8 @@
-import { speakTtsFallback, stopActiveAudio } from '../audio/audioEngine.js';
+import {
+  resumeAudioContextSync,
+  speakTtsFallback,
+  stopActiveAudio,
+} from '../audio/audioEngine.js';
 import { listAvailableVoices } from '../audio/ttsVoice.js';
 import { saveSettings } from '../storage/db.js';
 import { normalizeSettings } from '../utils/defaults.js';
@@ -8,11 +12,11 @@ export function createVoiceActions(state, setState) {
   const applyVoicePatch = async (patch, previewWord = '') => {
     const settings = normalizeSettings({ ...state.settings, ...patch });
     setState({ settings });
-    await saveSettings(settings);
     if (previewWord) {
-      stopActiveAudio();
-      speakTtsFallback(previewWord, settings);
+      resumeAudioContextSync();
+      speakTtsFallback(previewWord, settings, previewWord);
     }
+    await saveSettings(settings);
   };
 
   return {
@@ -60,8 +64,8 @@ export function createVoiceActions(state, setState) {
     },
 
     onPreviewVoiceSample(word) {
-      stopActiveAudio();
-      speakTtsFallback(word, state.settings);
+      resumeAudioContextSync();
+      speakTtsFallback(word, state.settings, word);
     },
   };
 }
