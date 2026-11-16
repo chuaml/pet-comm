@@ -1,0 +1,121 @@
+.recorder-box,
+.panel-card {
+  padding: 0.85rem;
+  border-radius: 0.7rem;
+  background: #0b192e;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.recorder-top,
+.stats-header-row,
+.backup-actions,
+.recorder-preview-btns,
+.save-zone,
+.delete-zone,
+.inline-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.record-trigger-btn {
+  inline-size: 100%;
+  min-block-size: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.6rem;
+  border: 2px solid #f87171;
+  background: rgba(220, 38, 38, 0.2);
+  color: #fecaca;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.record-trigger-btn[data-recording='true'] {
+  background: var(--danger);
+  color: #fff;
+}
+
+.record-linear-progress {
+  inline-size: 100%;
+  block-size: 0.55rem;
+}
+
+.error-banner,
+.import-confirm-box {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid #f87171;
+  font-size: 0.85rem;
+}
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.kpi-box {
+  padding: 0.55rem;
+  border-radius: 0.55rem;
+  background: var(--bg-panel);
+  text-align: center;
+}
+
+.kpi-num {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--accent-yellow);
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.freq-list,
+.recent-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.recent-heading {
+  margin: 0.4rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.freq-meta,
+.recent-log-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.freq-bar-track {
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  overflow: clip;
+}
+
+.freq-bar-fill {
+  block-size: 100%;
+  background: var(--accent-yellow);
+}

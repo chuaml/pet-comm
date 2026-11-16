@@ -1,0 +1,239 @@
+.parent-shell {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  block-size: 100dvh;
+  background: var(--bg-surface);
+}
+
+.parent-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: safe center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  background: var(--bg-elevated);
+  border-block-end: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.toolbar-brand,
+.toolbar-controls,
+.control-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: safe center;
+  gap: 0.45rem;
+}
+
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(255, 214, 0, 0.16);
+  color: var(--accent-yellow);
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+
+.pill-svg,
+.btn-inline-svg {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  display: inline-block;
+  flex: none;
+}
+
+.move-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--accent-blue);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.link-btn {
+  border: 0;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.control-caption {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.density-chip,
+.toolbar-btn,
+.slot-btn,
+.btn-primary,
+.btn-danger,
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-block-size: 44px;
+  padding: 0.45rem 0.8rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(203, 213, 225, 0.32);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.density-chip {
+  min-inline-size: 42px;
+  padding-inline: 0.55rem;
+}
+
+.density-chip[aria-pressed='true'],
+.btn-primary,
+.slot-btn-primary {
+  background: var(--accent-blue);
+  border-color: #93c5fd;
+  color: #fff;
+}
+
+.toolbar-btn-done {
+  background: var(--accent-yellow);
+  border-color: var(--accent-yellow);
+  color: #0b1f3a;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: #fca5a5;
+  color: #fff;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border-color: #f87171;
+  color: #fca5a5;
+}
+
+.parent-main {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.soundboard-grid-parent {
+  flex: 1 1 auto;
+  min-block-size: 18rem;
+}
+
+.parent-slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  border: 3px solid var(--pad-border, rgba(148, 163, 184, 0.35));
+  background: var(--pad-bg, rgba(16, 35, 63, 0.6));
+  color: var(--pad-fg, var(--text-main));
+}
+
+.parent-slot-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.parent-slot[data-move-target='true'] {
+  outline: 3px dashed var(--accent-yellow);
+  outline-offset: -4px;
+}
+
+.slot-action-svg {
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+
+.parent-slot-top,
+.parent-slot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.slot-badge,
+.audio-badge {
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(7, 19, 36, 0.76);
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.parent-slot-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-block: 0.3rem;
+}
+
+.parent-pad-icon {
+  inline-size: clamp(2.2rem, 6vmin, 4rem);
+  block-size: clamp(2.2rem, 6vmin, 4rem);
+}
+
+.parent-pad-label {
+  font-weight: 900;
+  font-size: clamp(1.05rem, 2.4vmin, 1.5rem);
+  text-align: center;
+}
+
+.parked-drawer {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.parked-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.parked-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.parked-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.55rem;
+  background: var(--bg-panel);
+  font-size: 0.85rem;
+}
