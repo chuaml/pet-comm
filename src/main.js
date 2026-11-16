@@ -1,21 +1,12 @@
 import { html, render } from 'lit-html';
 import {
-  isAudioUnlocked,
-  preloadAllAudio,
-  resumeAudioContextSync,
-  stopActiveAudio,
-  triggerButtonSound,
-  unlockAudioEngine,
+  decodeRawArrayBuffer, isAudioUnlocked, preloadAllAudio, resumeAudioContextSync,
+  stopActiveAudio, triggerButtonSound, unlockAudioEngine,
 } from './audio/audioEngine.js';
 import { listAvailableVoices, subscribeVoicesChanged, warmSpeechVoices } from './audio/ttsVoice.js';
+import { hydrateCachedVoicePack } from './audio/voicePackLoader.js';
+import { completeLoadingTask, VOICE_PACK_TASK_ID } from './state/loadingStatus.js';
 import { appendActivityLog, initStorage, saveButtons, saveSettings } from './storage/db.js';
-import './style.css';
-import './styles/lock.css';
-import './styles/parent.css';
-import './styles/dialogs.css';
-import './styles/activity.css';
-import './styles/voiceAndPresets.css';
-import './styles/colorPicker.css';
 import { createActivityActions } from './ui/activityController.js';
 import { activityDialogView, installLightDismissFallback } from './ui/activityModal.js';
 import { boardView } from './ui/board.js';
@@ -26,34 +17,29 @@ import { createVoiceActions } from './ui/voiceController.js';
 import { voiceDialogView } from './ui/voiceModal.js';
 import { autoColorBoardButtons } from './utils/autoColor.js';
 import { DEFAULT_SETTINGS, swapOrMoveButtonSlot } from './utils/defaults.js';
+import './style.css';
+import './styles/lock.css';
+import './styles/parent.css';
+import './styles/dialogs.css';
+import './styles/activity.css';
+import './styles/voiceAndPresets.css';
+import './styles/colorPicker.css';
+import './styles/loadingStatus.css';
 
 const appRoot = document.getElementById('app');
 let wakeLockSentinel = null;
 let flashTimer = null;
 let deferredInstallPrompt = null;
-
 const supportsWebInstall =
   typeof Navigator !== 'undefined' && typeof Navigator.prototype.install === 'function';
 
 const state = {
-  mode: 'pet',
-  audioUnlocked: false,
-  lockProgress: 0,
-  settings: { ...DEFAULT_SETTINGS },
-  buttons: [],
-  audioMap: new Map(),
-  logs: [],
-  availableVoices: [],
-  flashingButtonId: null,
-  movingButtonId: null,
-  editorDraft: null,
-  voiceModalOpen: false,
-  activityModalOpen: false,
-  confirmClearLogs: false,
-  pendingImport: null,
-  backupStatus: '',
-  canInstallApp: supportsWebInstall,
-  installingApp: false,
+  mode: 'pet', audioUnlocked: false, lockProgress: 0,
+  settings: { ...DEFAULT_SETTINGS }, buttons: [], audioMap: new Map(), logs: [],
+  availableVoices: [], loadingTasks: {}, flashingButtonId: null, movingButtonId: null,
+  editorDraft: null, voiceModalOpen: false, activityModalOpen: false,
+  confirmClearLogs: false, pendingImport: null, backupStatus: '',
+  canInstallApp: supportsWebInstall, installingApp: false,
 };
 
 function syncModalElement(id, shouldOpen) {
@@ -67,12 +53,10 @@ function syncModalElement(id, shouldOpen) {
 function setState(patch) {
   Object.assign(state, patch);
   render(
-    html`
-      ${boardView(state, actions)}
-      ${editorDialogView(state, actions)}
-      ${voiceDialogView(state, actions)}
-      ${activityDialogView(state, actions)}
-    `,
+    html`${boardView(state, actions)}${editorDialogView(state, actions)}${voiceDialogView(
+      state,
+      actions
+    )}${activityDialogView(state, actions)}`,
     appRoot
   );
   syncModalElement('editor-dialog', Boolean(state.editorDraft));
@@ -84,17 +68,9 @@ async function syncWakeLock() {
   if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
   if (state.mode === 'pet' && document.visibilityState === 'visible') {
     if (wakeLockSentinel && !wakeLockSentinel.released) return;
-    try {
-      wakeLockSentinel = await navigator.wakeLock.request('screen');
-    } catch {
-      wakeLockSentinel = null;
-    }
+    wakeLockSentinel = await navigator.wakeLock.request('screen').catch(() => null);
   } else if (wakeLockSentinel) {
-    try {
-      await wakeLockSentinel.release();
-    } catch {
-      // Ignore release errors
-    }
+    await wakeLockSentinel.release().catch(() => {});
     wakeLockSentinel = null;
   }
 }
@@ -176,9 +152,9 @@ const actions = {
   },
 
   async onAutoColorBoard() {
-    const recolored = autoColorBoardButtons(state.buttons, state.settings.gridDensity);
-    setState({ buttons: recolored, movingButtonId: null });
-    await saveButtons(recolored);
+    const buttons = autoColorBoardButtons(state.buttons, state.settings.gridDensity);
+    setState({ buttons, movingButtonId: null });
+    await saveButtons(buttons);
   },
 
   onPreviewButton: (btn) => {
@@ -190,9 +166,9 @@ const actions = {
 
   async onCompleteMove(targetSlotIdx) {
     if (!state.movingButtonId) return;
-    const updated = swapOrMoveButtonSlot(state.buttons, state.movingButtonId, targetSlotIdx);
-    setState({ buttons: updated, movingButtonId: null });
-    await saveButtons(updated);
+    const buttons = swapOrMoveButtonSlot(state.buttons, state.movingButtonId, targetSlotIdx);
+    setState({ buttons, movingButtonId: null });
+    await saveButtons(buttons);
   },
 
   async onInstallApp() {
@@ -210,7 +186,7 @@ const actions = {
         setState({ canInstallApp: Boolean(deferredInstallPrompt) });
       }
     } catch {
-      // User dismissed installation prompt
+      // User dismissed
     } finally {
       setState({ installingApp: false });
     }
@@ -228,13 +204,24 @@ document.addEventListener('visibilitychange', () => syncWakeLock());
 async function bootstrap() {
   warmSpeechVoices();
   subscribeVoicesChanged((availableVoices) => setState({ availableVoices }));
-  const hydrated = await initStorage();
+  const [hydrated, cachedPack] = await Promise.all([
+    initStorage(),
+    hydrateCachedVoicePack(decodeRawArrayBuffer),
+  ]);
   await preloadAllAudio(hydrated.audioMap);
+  const loadingTasks = cachedPack.ready
+    ? completeLoadingTask({}, VOICE_PACK_TASK_ID, { total: cachedPack.count, notify: false })
+    : {};
+  const settings =
+    hydrated.settings.voiceEngine === 'human-pack' && !cachedPack.ready
+      ? { ...hydrated.settings, voiceEngine: 'os' }
+      : hydrated.settings;
   setState({
-    settings: hydrated.settings,
+    settings,
     buttons: hydrated.buttons,
     audioMap: hydrated.audioMap,
     logs: hydrated.logs,
+    loadingTasks,
     availableVoices: listAvailableVoices(),
     audioUnlocked: isAudioUnlocked(),
   });

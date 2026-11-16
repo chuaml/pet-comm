@@ -42,6 +42,7 @@ describe('JSON board & audio backup serialization', () => {
     expect(restored.settings).toEqual({
       gridDensity: 20,
       cooldownMs: 750,
+      voiceEngine: 'os',
       voiceURI: 'com.apple.voice.enhanced.en-US.Samantha',
       ttsPitch: 1.35,
       ttsRate: 1.0,
@@ -72,6 +73,7 @@ describe('JSON board & audio backup serialization', () => {
     expect(restored.settings).toEqual({
       gridDensity: 9,
       cooldownMs: 500,
+      voiceEngine: 'os',
       voiceURI: 'auto',
       ttsPitch: 1.2,
       ttsRate: 0.92,

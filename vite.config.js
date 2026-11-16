@@ -11,7 +11,7 @@ function collectFiles(dir, baseDir = dir, acc = []) {
       collectFiles(fullPath, baseDir, acc);
     } else {
       const rel = relative(baseDir, fullPath).split(sep).join(posix.sep);
-      if (rel !== 'sw.js' && rel !== '_headers') {
+      if (rel !== 'sw.js' && rel !== '_headers' && !rel.startsWith('voice-pack/')) {
         acc.push({ rel, fullPath });
       }
     }

@@ -1,0 +1,134 @@
+/* Loading Status Subsystem & Styled <progress> Bar */
+.loading-status-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 2px solid rgba(147, 197, 253, 0.45);
+}
+
+.loading-status-banner[data-phase='ready'] {
+  border-color: var(--accent-yellow);
+  background: color-mix(in oklab, var(--bg-elevated) 84%, var(--accent-yellow) 16%);
+}
+
+.loading-status-banner[data-phase='error'] {
+  border-color: #f87171;
+}
+
+.loading-status-main {
+  flex: 1 1 16rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.loading-status-text {
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.loading-status-actions,
+.voice-pack-action-row,
+.voice-pack-ready-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.voice-pack-action-row,
+.voice-pack-ready-row,
+.voice-pack-progress-box {
+  margin-block-start: 0.65rem;
+}
+
+.voice-pack-ready-row {
+  justify-content: space-between;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 214, 0, 0.14);
+  border: 1.5px solid var(--accent-yellow);
+  font-size: 0.86rem;
+}
+
+.voice-pack-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.voice-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+  margin-block-start: 0.45rem;
+}
+
+.voice-engine-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.18rem;
+  min-block-size: 56px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.55rem;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  background: #0b192e;
+  color: var(--text-main);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.voice-engine-card small {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+}
+
+.voice-engine-card[aria-pressed='true'] {
+  border-color: var(--accent-yellow);
+  background: rgba(255, 214, 0, 0.16);
+}
+
+.voice-engine-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Custom Cross-Browser <progress> Element */
+progress.task-progress-bar {
+  --progress-bar-radius: 999px;
+  --progress-bar-track: #334155;
+  --progress-bar-fill: var(--accent-yellow);
+
+  appearance: none;
+  border: 0 solid;
+  overflow: clip;
+  inline-size: 100%;
+  block-size: 0.65rem;
+  border-radius: var(--progress-bar-radius);
+  background: var(--progress-bar-track);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+progress.task-progress-bar::-webkit-progress-bar {
+  background: transparent;
+}
+
+progress.task-progress-bar::-webkit-progress-value {
+  background: var(--progress-bar-fill);
+  border-radius: var(--progress-bar-radius);
+  transition: inline-size 0.25s ease;
+}
+
+progress.task-progress-bar::-moz-progress-bar {
+  background: var(--progress-bar-fill);
+  border-radius: var(--progress-bar-radius);
+  transition: inline-size 0.25s ease;
+}

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { triggerButtonSound } from '../src/audio/audioEngine.js';
-import { playFallbackChime } from '../src/audio/chimeFallback.js';
 import { encodeMonoWav } from '../src/audio/wavUtils.js';
 import {
   appendActivityLog,
@@ -14,8 +13,8 @@ import {
   saveSettings,
 } from '../src/storage/db.js';
 
-describe('audioEngine guards, chime fallback & real IndexedDB persistence', () => {
-  it('enforces 100ms split-paw guard, per-button cooldown, and forwards voiceSettings', () => {
+describe('audioEngine guards & real IndexedDB persistence', () => {
+  it('enforces 100ms split-paw guard, per-button cooldown, and forwards voiceSettings cleanly', () => {
     vi.useFakeTimers();
     const utterances = [];
     const mockSynth = {
@@ -32,7 +31,13 @@ describe('audioEngine guards, chime fallback & real IndexedDB persistence', () =
 
     const btnA = { id: 'btn-a', label: 'Outside', ttsText: 'Outside', hasAudio: false };
     const btnB = { id: 'btn-b', label: 'OK', ttsText: 'Okay', hasAudio: false };
-    const voiceSettings = { voiceURI: 'auto', ttsPitch: 1.25, ttsRate: 0.9, ttsVolume: 0.75 };
+    const voiceSettings = {
+      voiceEngine: 'os',
+      voiceURI: 'auto',
+      ttsPitch: 1.25,
+      ttsRate: 0.9,
+      ttsVolume: 0.75,
+    };
 
     expect(triggerButtonSound(btnA, { cooldownMs: 400, voiceSettings }).played).toBe(true);
     expect(utterances[0].pitch).toBe(1.25);
@@ -51,43 +56,16 @@ describe('audioEngine guards, chime fallback & real IndexedDB persistence', () =
     expect(utterances.map((u) => u.text)).toEqual(['Outside', 'Okay']);
   });
 
-  it('synthesizes a pentatonic Web Audio chime when playFallbackChime is invoked', () => {
-    const startSpy = vi.fn();
-    const stopSpy = vi.fn();
-    const mockCtx = {
-      state: 'running',
-      currentTime: 1.0,
-      destination: {},
-      createGain: () => ({
-        gain: {
-          setValueAtTime: vi.fn(),
-          linearRampToValueAtTime: vi.fn(),
-          exponentialRampToValueAtTime: vi.fn(),
-        },
-        connect: vi.fn(),
-      }),
-      createOscillator: () => ({
-        type: 'sine',
-        frequency: { setValueAtTime: vi.fn() },
-        connect: vi.fn(),
-        start: startSpy,
-        stop: stopSpy,
-      }),
-    };
-
-    expect(playFallbackChime(mockCtx, 'btn-play', 0.8)).toBe(true);
-    expect(startSpy).toHaveBeenCalledTimes(2);
-    expect(stopSpy).toHaveBeenCalledTimes(2);
-  });
-
   it('persists buttons, WAV audio blobs, settings, logs, and full restores in real IndexedDB', async () => {
     const seeded = await initStorage();
     expect(seeded.buttons).toHaveLength(14);
     expect(seeded.settings.gridDensity).toBe(16);
+    expect(seeded.settings.voiceEngine).toBe('os');
 
     await saveSettings({
       gridDensity: 20,
       cooldownMs: 750,
+      voiceEngine: 'human-pack',
       voiceURI: 'Samantha',
       ttsPitch: 1.35,
       ttsRate: 1.0,
@@ -116,6 +94,7 @@ describe('audioEngine guards, chime fallback & real IndexedDB persistence', () =
 
     const reloaded = await initStorage();
     expect(reloaded.settings.gridDensity).toBe(20);
+    expect(reloaded.settings.voiceEngine).toBe('human-pack');
     expect(reloaded.settings.voiceURI).toBe('Samantha');
     expect(reloaded.buttons).toHaveLength(15);
     expect(reloaded.audioMap.get('btn-custom-1')?.durationMs).toBe(320);

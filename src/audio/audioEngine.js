@@ -1,5 +1,6 @@
-import { playFallbackChime } from './chimeFallback.js';
+import { normalizeVoiceSettings } from '../utils/presets.js';
 import { cancelTts, speakTts, warmSpeechVoices } from './ttsVoice.js';
+import { ensureVoicePackDecoded, playHumanVoicePackPhrase } from './voicePackLoader.js';
 
 const SPLIT_PAW_GUARD_MS = 100;
 
@@ -50,8 +51,7 @@ export function resumeAudioContextSync() {
 export async function decodeRawArrayBuffer(rawBuffer) {
   const ctx = ensureAudioContext();
   if (!ctx || !rawBuffer) return null;
-  const copy = rawBuffer.slice(0);
-  return ctx.decodeAudioData(copy);
+  return ctx.decodeAudioData(rawBuffer.slice(0));
 }
 
 export async function cacheButtonAudio(buttonId, audioRecord) {
@@ -115,11 +115,9 @@ export async function unlockAudioEngine() {
   }
 
   for (const [buttonId, record] of pendingAudioMap.entries()) {
-    if (!decodedBuffers.has(buttonId)) {
-      await cacheButtonAudio(buttonId, record);
-    }
+    if (!decodedBuffers.has(buttonId)) await cacheButtonAudio(buttonId, record);
   }
-
+  await ensureVoicePackDecoded(decodeRawArrayBuffer);
   return isAudioUnlocked();
 }
 
@@ -151,20 +149,26 @@ export function stopActiveAudio() {
   cancelTts();
 }
 
-function playDecodedBuffer(audioBuffer) {
+function playDecodedBuffer(audioBuffer, tuneSettings = null) {
   const ctx = ensureAudioContext();
   if (!ctx || !audioBuffer) return false;
-  if (ctx.state === 'suspended') {
-    ctx.resume().catch(() => {});
-  }
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 
   const source = ctx.createBufferSource();
   const gain = ctx.createGain();
   source.buffer = audioBuffer;
-  gain.gain.setValueAtTime(1, ctx.currentTime);
+
+  const now = ctx.currentTime || 0;
+  gain.gain.setValueAtTime(tuneSettings ? tuneSettings.ttsVolume : 1, now);
+
+  if (tuneSettings) {
+    source.playbackRate?.setValueAtTime?.(tuneSettings.ttsRate, now);
+    const cents = Math.round((tuneSettings.ttsPitch - 1.1) * 350);
+    source.detune?.setValueAtTime?.(cents, now);
+  }
+
   source.connect(gain);
   gain.connect(ctx.destination);
-
   activeSource = source;
   activeGain = gain;
   source.onended = () => {
@@ -177,12 +181,14 @@ function playDecodedBuffer(audioBuffer) {
   return true;
 }
 
-export function speakTtsFallback(text, voiceSettings, seedKey = text) {
-  const onFallback = () => {
-    playFallbackChime(ensureAudioContext(), seedKey, voiceSettings?.ttsVolume);
-  };
-  const spoke = speakTts(text, voiceSettings, { onFallback });
-  return spoke;
+function tryPlayVoicePack(phrase, voiceSettings) {
+  const cfg = normalizeVoiceSettings(voiceSettings);
+  return playHumanVoicePackPhrase(phrase, cfg, playDecodedBuffer, decodeRawArrayBuffer, cancelTts);
+}
+
+export function speakTtsFallback(text, voiceSettings) {
+  if (tryPlayVoicePack(text, voiceSettings)) return true;
+  return speakTts(text, voiceSettings);
 }
 
 export function triggerButtonSound(button, options = {}) {
@@ -190,19 +196,12 @@ export function triggerButtonSound(button, options = {}) {
 
   const now = performance.now();
   const cooldownMs = options.cooldownMs ?? 500;
-  const bypassGuards = Boolean(options.bypassGuards);
-
-  if (!bypassGuards) {
-    if (
-      button.id !== lastTriggeredButtonId &&
-      now - lastAnyTriggerAt < SPLIT_PAW_GUARD_MS
-    ) {
+  if (!options.bypassGuards) {
+    if (button.id !== lastTriggeredButtonId && now - lastAnyTriggerAt < SPLIT_PAW_GUARD_MS) {
       return { played: false, reason: 'split-paw' };
     }
     const prevTime = lastPlayedByButton.get(button.id) ?? -Infinity;
-    if (now - prevTime < cooldownMs) {
-      return { played: false, reason: 'cooldown' };
-    }
+    if (now - prevTime < cooldownMs) return { played: false, reason: 'cooldown' };
     lastAnyTriggerAt = now;
     lastTriggeredButtonId = button.id;
     lastPlayedByButton.set(button.id, now);
@@ -217,12 +216,11 @@ export function triggerButtonSound(button, options = {}) {
   }
 
   const phrase = button.ttsText || button.label;
-  const spoke = speakTtsFallback(phrase, options.voiceSettings, button.id || phrase);
-  if (!spoke) {
-    const chimed = Boolean(ensureAudioContext());
-    return { played: chimed, mode: chimed ? 'chime' : 'tts' };
+  if (tryPlayVoicePack(phrase, options.voiceSettings)) {
+    return { played: true, mode: 'human-pack' };
   }
-  return { played: true, mode: 'tts' };
+
+  return { played: speakTts(phrase, options.voiceSettings), mode: 'tts' };
 }
 
 export async function previewAudioPayload(audioPayload, fallbackText, voiceSettings) {
@@ -236,8 +234,8 @@ export async function previewAudioPayload(audioPayload, fallbackText, voiceSetti
         return true;
       }
     } catch {
-      // Fall back to TTS below
+      // Fall back below
     }
   }
-  return speakTtsFallback(fallbackText, voiceSettings, fallbackText);
+  return speakTtsFallback(fallbackText, voiceSettings);
 }

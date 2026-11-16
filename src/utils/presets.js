@@ -34,6 +34,7 @@ export const VOICE_PRESETS = Object.freeze([
 ]);
 
 export const DEFAULT_VOICE_SETTINGS = Object.freeze({
+  voiceEngine: 'os',
   voiceURI: 'auto',
   ttsPitch: 1.2,
   ttsRate: 0.92,
@@ -52,6 +53,7 @@ function clampRounded(val, min, max, fallback) {
 export function normalizeVoiceSettings(raw) {
   const rawUri = typeof raw?.voiceURI === 'string' ? raw.voiceURI.trim().slice(0, 160) : '';
   return {
+    voiceEngine: raw?.voiceEngine === 'human-pack' ? 'human-pack' : 'os',
     voiceURI: rawUri || DEFAULT_VOICE_SETTINGS.voiceURI,
     ttsPitch: clampRounded(raw?.ttsPitch, 0.5, 2.0, DEFAULT_VOICE_SETTINGS.ttsPitch),
     ttsRate: clampRounded(raw?.ttsRate, 0.5, 2.0, DEFAULT_VOICE_SETTINGS.ttsRate),

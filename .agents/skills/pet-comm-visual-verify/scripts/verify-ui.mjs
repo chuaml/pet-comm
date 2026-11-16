@@ -96,10 +96,22 @@ try {
   await page.waitForTimeout(100);
   await page.screenshot({ path: path.join(outDir, 'parent-mode-20.png') });
 
+  await page.route('**/voice-pack/*.mp3', async (route) => {
+    await new Promise((r) => setTimeout(r, 35));
+    await route.continue();
+  });
   await page.getByRole('button', { name: /Voice Tune/i }).click();
   await page.waitForSelector('#voice-dialog[open]');
+  await page.locator('#voice-dialog').getByRole('button', { name: /Load Human Voice Pack/i }).click();
+  await page.waitForSelector('#voice-dialog progress.task-progress-bar');
+  await page.waitForTimeout(260);
+  await page.screenshot({ path: path.join(outDir, 'voice-pack-loading-progress.png') });
+  await page.waitForSelector('.voice-pack-ready-row', { timeout: 8000 });
   await page.screenshot({ path: path.join(outDir, 'voice-modal.png') });
   await page.locator('#voice-dialog').getByRole('button', { name: 'Done' }).click();
+  await page.waitForSelector('.loading-status-banner[data-phase="ready"]');
+  await page.screenshot({ path: path.join(outDir, 'parent-voice-pack-ready.png') });
+  await page.locator('.loading-status-banner').getByRole('button', { name: /Switch to Human Voice/i }).click();
 
   await page.locator('.parent-slot-empty').first().click();
   await page.waitForSelector('#editor-dialog[open]');

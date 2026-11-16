@@ -1,7 +1,9 @@
 import { html } from 'lit-html';
 import { resolveBestVoice } from '../audio/ttsVoice.js';
+import { isVoicePackReady } from '../audio/voicePackLoader.js';
 import { matchVoicePresetId, VOICE_PRESETS, VOICE_SAMPLE_WORDS } from '../utils/presets.js';
 import { renderIcon } from './icons.js';
+import { voiceEngineSectionView } from './loadingStatusView.js';
 
 function renderSliderField({ id, name, label, min, max, step, value, readout, valueText, hint, onInput }) {
   const styleVars = `--attr-min:${min};--attr-max:${max};--control-value:${value};`;
@@ -39,7 +41,7 @@ export function voiceDialogView(state, actions) {
   const voices = state.availableVoices || [];
   const activePresetId = matchVoicePresetId(settings);
   const autoBest = resolveBestVoice(voices, 'auto');
-  const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const usingPack = settings.voiceEngine === 'human-pack' && isVoicePackReady();
 
   return html`
     <dialog
@@ -62,11 +64,7 @@ export function voiceDialogView(state, actions) {
       </div>
 
       <div class="activity-dialog-body">
-        ${!ttsSupported
-          ? html`<p class="error-banner" role="status">
-              Text-to-Speech is unavailable in this browser. Custom recorded button clips will still play normally.
-            </p>`
-          : null}
+        ${voiceEngineSectionView(state, actions)}
 
         <fieldset class="choice-fieldset">
           <legend>Quick Tone Presets</legend>
@@ -88,31 +86,35 @@ export function voiceDialogView(state, actions) {
           </div>
         </fieldset>
 
-        <div class="field-group">
-          <label for="voice-uri-select">System Voice</label>
-          <select
-            id="voice-uri-select"
-            name="voiceURI"
-            class="toolbar-select"
-            aria-describedby="voice-uri-hint"
-            .value=${settings.voiceURI || 'auto'}
-            @change=${(e) => actions.onUpdateVoiceSettings({ voiceURI: e.target.value })}
-          >
-            <option value="auto" ?selected=${settings.voiceURI === 'auto'}>
-              Auto — Best Human Voice${autoBest ? ` (${autoBest.name})` : ''}
-            </option>
-            ${voices.map(
-              (v) => html`
-                <option value=${v.voiceURI} ?selected=${settings.voiceURI === v.voiceURI}>
-                  ${v.name} (${v.lang}${v.localService ? ' · Offline' : ''})
-                </option>
-              `
-            )}
-          </select>
-          <span id="voice-uri-hint" class="field-hint">
-            Applies to all buttons using Text-to-Speech. Custom recorded microphone clips play unmodified.
-          </span>
-        </div>
+        ${!usingPack
+          ? html`
+              <div class="field-group">
+                <label for="voice-uri-select">OS System Voice</label>
+                <select
+                  id="voice-uri-select"
+                  name="voiceURI"
+                  class="toolbar-select"
+                  aria-describedby="voice-uri-hint"
+                  .value=${settings.voiceURI || 'auto'}
+                  @change=${(e) => actions.onUpdateVoiceSettings({ voiceURI: e.target.value })}
+                >
+                  <option value="auto" ?selected=${settings.voiceURI === 'auto'}>
+                    Auto — Best Local Voice${autoBest ? ` (${autoBest.name})` : ' (None detected)'}
+                  </option>
+                  ${voices.map(
+                    (v) => html`
+                      <option value=${v.voiceURI} ?selected=${settings.voiceURI === v.voiceURI}>
+                        ${v.name} (${v.lang}${v.localService ? ' · Offline' : ' · Cloud'})
+                      </option>
+                    `
+                  )}
+                </select>
+                <span id="voice-uri-hint" class="field-hint">
+                  Used when OS Offline Speech is selected (and as fallback for custom words).
+                </span>
+              </div>
+            `
+          : null}
 
         <section class="panel-card voice-sliders-card" aria-labelledby="voice-fine-tune-heading">
           <h3 id="voice-fine-tune-heading" class="section-heading">Fine-Tune Voice Sound</h3>

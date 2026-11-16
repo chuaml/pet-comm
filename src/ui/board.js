@@ -6,6 +6,7 @@ import {
   resolveButtonColors,
 } from '../utils/defaults.js';
 import { renderIcon } from './icons.js';
+import { parentLoadingStatusView } from './loadingStatusView.js';
 import { lockButtonView } from './lock.js';
 
 function renderPetPad(btn, isFlashing, actions) {
@@ -85,15 +86,11 @@ function renderParentSlot(btn, slotIdx, movingButtonId, actions) {
       </div>
       <div class="parent-slot-actions">
         ${isMoveMode
-          ? html`
-              <button
-                type="button"
-                class="slot-btn slot-btn-primary"
-                @click=${() => (isSelectedSource ? actions.onCancelMove() : actions.onCompleteMove(slotIdx))}
-              >
-                ${isSelectedSource ? 'Cancel Move' : 'Swap Here'}
-              </button>
-            `
+          ? html`<button
+              type="button"
+              class="slot-btn slot-btn-primary"
+              @click=${() => (isSelectedSource ? actions.onCancelMove() : actions.onCompleteMove(slotIdx))}
+            >${isSelectedSource ? 'Cancel Move' : 'Swap Here'}</button>`
           : html`
               <button type="button" class="slot-btn" aria-label=${`Preview ${btn.label}`} @click=${() => actions.onPreviewButton(btn)}>
                 ${renderIcon('play', 'btn-inline-svg')} Test
@@ -217,6 +214,8 @@ export function boardView(state, actions) {
       </header>
 
       <main class="parent-main">
+        ${parentLoadingStatusView(state, actions)}
+
         <section class="soundboard-grid soundboard-grid-parent" data-density=${density} aria-label="Editable button slots">
           ${slots.map((btn, idx) => renderParentSlot(btn, idx, state.movingButtonId, actions))}
         </section>

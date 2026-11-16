@@ -1,0 +1,229 @@
+{
+  "version": "ava-warm-v1",
+  "voiceLabel": "Ava — Warm Natural Human Voice",
+  "totalBytes": 115344,
+  "clips": [
+    {
+      "key": "outside",
+      "text": "Outside",
+      "aliases": [
+        "outside",
+        "out"
+      ],
+      "url": "/voice-pack/outside.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6912
+    },
+    {
+      "key": "eat",
+      "text": "Eat",
+      "aliases": [
+        "eat",
+        "food",
+        "hungry",
+        "dinner"
+      ],
+      "url": "/voice-pack/eat.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5184
+    },
+    {
+      "key": "water",
+      "text": "Water",
+      "aliases": [
+        "water",
+        "drink",
+        "thirsty"
+      ],
+      "url": "/voice-pack/water.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5760
+    },
+    {
+      "key": "treat",
+      "text": "Treat",
+      "aliases": [
+        "treat",
+        "snack",
+        "bone"
+      ],
+      "url": "/voice-pack/treat.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6048
+    },
+    {
+      "key": "play",
+      "text": "Play",
+      "aliases": [
+        "play",
+        "toy"
+      ],
+      "url": "/voice-pack/play.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5328
+    },
+    {
+      "key": "ball",
+      "text": "Ball",
+      "aliases": [
+        "ball"
+      ],
+      "url": "/voice-pack/ball.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5328
+    },
+    {
+      "key": "frisbee",
+      "text": "Frisbee",
+      "aliases": [
+        "frisbee",
+        "disc"
+      ],
+      "url": "/voice-pack/frisbee.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6480
+    },
+    {
+      "key": "come",
+      "text": "Come",
+      "aliases": [
+        "come",
+        "here",
+        "come here"
+      ],
+      "url": "/voice-pack/come.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 4896
+    },
+    {
+      "key": "sit",
+      "text": "Sit",
+      "aliases": [
+        "sit"
+      ],
+      "url": "/voice-pack/sit.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5328
+    },
+    {
+      "key": "stay",
+      "text": "Stay",
+      "aliases": [
+        "stay",
+        "wait"
+      ],
+      "url": "/voice-pack/stay.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5904
+    },
+    {
+      "key": "up",
+      "text": "Up",
+      "aliases": [
+        "up"
+      ],
+      "url": "/voice-pack/up.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5040
+    },
+    {
+      "key": "down",
+      "text": "Down",
+      "aliases": [
+        "down"
+      ],
+      "url": "/voice-pack/down.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5472
+    },
+    {
+      "key": "okay",
+      "text": "Okay",
+      "aliases": [
+        "okay",
+        "ok"
+      ],
+      "url": "/voice-pack/okay.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5328
+    },
+    {
+      "key": "no",
+      "text": "No",
+      "aliases": [
+        "no",
+        "stop"
+      ],
+      "url": "/voice-pack/no.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5760
+    },
+    {
+      "key": "walk",
+      "text": "Walk",
+      "aliases": [
+        "walk",
+        "leash"
+      ],
+      "url": "/voice-pack/walk.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6192
+    },
+    {
+      "key": "potty",
+      "text": "Potty",
+      "aliases": [
+        "potty"
+      ],
+      "url": "/voice-pack/potty.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 5616
+    },
+    {
+      "key": "good",
+      "text": "Good",
+      "aliases": [
+        "good",
+        "good job"
+      ],
+      "url": "/voice-pack/good.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 4464
+    },
+    {
+      "key": "yes",
+      "text": "Yes",
+      "aliases": [
+        "yes",
+        "yeah"
+      ],
+      "url": "/voice-pack/yes.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6480
+    },
+    {
+      "key": "all-done",
+      "text": "All done",
+      "aliases": [
+        "all done",
+        "done"
+      ],
+      "url": "/voice-pack/all-done.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 7344
+    },
+    {
+      "key": "love",
+      "text": "Love",
+      "aliases": [
+        "love",
+        "love you",
+        "cuddle",
+        "pet"
+      ],
+      "url": "/voice-pack/love.mp3",
+      "mimeType": "audio/mpeg",
+      "bytes": 6480
+    }
+  ]
+}

@@ -14,7 +14,6 @@ let cachedLang = '';
 let activeUtterance = null;
 let speakSeq = 0;
 let pendingSpeakTimer = null;
-let watchdogTimer = null;
 
 function getSpeechSynth() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
@@ -109,6 +108,10 @@ export function listAvailableVoices(preferredLang = getPreferredLang()) {
   return refreshCachedVoices(synth, preferredLang);
 }
 
+export function hasSystemVoices() {
+  return listAvailableVoices().length > 0;
+}
+
 export function subscribeVoicesChanged(onChange) {
   const synth = getSpeechSynth();
   if (!synth || typeof onChange !== 'function') return () => {};
@@ -123,16 +126,16 @@ export function subscribeVoicesChanged(onChange) {
   };
 }
 
-function clearTtsTimers() {
-  if (pendingSpeakTimer) clearTimeout(pendingSpeakTimer);
-  if (watchdogTimer) clearTimeout(watchdogTimer);
-  pendingSpeakTimer = null;
-  watchdogTimer = null;
+function clearPendingTimer() {
+  if (pendingSpeakTimer) {
+    clearTimeout(pendingSpeakTimer);
+    pendingSpeakTimer = null;
+  }
 }
 
 export function cancelTts() {
   speakSeq += 1;
-  clearTtsTimers();
+  clearPendingTimer();
   activeUtterance = null;
   const synth = getSpeechSynth();
   if (!synth) return;
@@ -143,17 +146,15 @@ export function cancelTts() {
   }
 }
 
-export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS, options = {}) {
+export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS) {
   const phrase = String(text || '').trim();
   if (!phrase) return false;
 
-  const { onFallback, stallTimeoutMs = 250 } = options;
   const seq = ++speakSeq;
-  clearTtsTimers();
+  clearPendingTimer();
 
   const synth = getSpeechSynth();
   if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
-    onFallback?.();
     return false;
   }
 
@@ -183,38 +184,15 @@ export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS, options =
         utterance.pitch = cfg.ttsPitch;
         utterance.rate = cfg.ttsRate;
         utterance.volume = cfg.ttsVolume;
-
-        let started = false;
-        let fallbackFired = false;
-        const fireFallbackOnce = () => {
-          if (fallbackFired || started || seq !== speakSeq) return;
-          fallbackFired = true;
-          onFallback?.();
-        };
-
-        if (typeof onFallback === 'function' && stallTimeoutMs > 0) {
-          watchdogTimer = setTimeout(fireFallbackOnce, stallTimeoutMs);
-          watchdogTimer.unref?.();
-        }
-
-        utterance.onstart = () => {
-          started = true;
-          clearTtsTimers();
-        };
         utterance.onend = () => {
           if (activeUtterance === utterance) activeUtterance = null;
-          clearTtsTimers();
         };
-        utterance.onerror = (ev) => {
+        utterance.onerror = () => {
           if (activeUtterance === utterance) activeUtterance = null;
-          clearTtsTimers();
-          const errCode = ev?.error;
-          if (errCode !== 'canceled' && errCode !== 'interrupted') fireFallbackOnce();
         };
-
         synth.speak(utterance);
       } catch {
-        onFallback?.();
+        // Ignore browser utterance errors
       }
     };
 
@@ -228,7 +206,6 @@ export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS, options =
 
     return true;
   } catch {
-    onFallback?.();
     return false;
   }
 }

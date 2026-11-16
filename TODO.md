@@ -2,17 +2,7 @@
 
 ## audio tune
 
-- [x] Identified and fixed all 4 button audio delay & dropped speech root causes:
-  - [x] Strictly prioritize local offline OS voices (`localService: true`) over slow/flaky remote cloud streaming TTS voices
-  - [x] Eliminate idle `speechSynthesis.cancel()` + `speak()` IPC race, resume `paused` state, and hold strong `activeUtterance` reference
-  - [x] Remove first-press `unlockAudioEngine()` empty-utterance collision and `e.preventDefault()` gesture block on `.pet-pad` `pointerdown`, plus pre-warm `speechSynthesis.getVoices()` on app boot
-  - [x] Add automatic Web Audio pentatonic chime fallback if OS TTS is unavailable or stalls `>250ms`
-
-## button types
-
-- [x] More color customization:
-  - [x] Expanded pre-made color palette to 18 WCAG high-contrast swatches
-  - [x] Added Custom Full RGB controls (`R/G/B` `0–255` sliders + color picker + `#HEX` input) for Button Background with auto high-contrast Text & Border plus optional Text/Icon RGB override
-- [x] Smart non-repeating automatic coloring:
-  - [x] Unique non-repeating colors across all 14 starter Button Type presets
-  - [x] 2D neighbor-aware + least-used + perceptual-distance auto-coloring when creating buttons and via one-tap Parent Mode **Auto-Color** button (preserving Custom RGB buttons)
+- [x] Removed synthetic pentatonic chime generator (`chimeFallback.js`) so buttons never emit random oscillator noise
+- [x] Default to OS offline speech (`window.speechSynthesis`) and keep current OS/recorded audio active while downloading in background
+- [x] Added manual background loading & persistent IndexedDB caching (`voicePack` store) of a pre-generated neural Human Voice Pack (`public/voice-pack/`, 20 words, ~113 KB)
+- [x] Added Loading Status Subsystem (`loadingStatus.js` + accessible `<progress>` bar + `"Ready to switch"` notification pill) and gated switching so the Human Voice Pack can only be selected once 100% cached
