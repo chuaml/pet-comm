@@ -21,7 +21,7 @@ While `npm test` (`vitest` + `happy-dom` + `fake-indexeddb`) verifies unit logic
    ```bash
    npx -y -p playwright@latest sh -c 'PW_ROOT="$(dirname "$(which playwright)")/../lib/node_modules" node .agents/skills/pet-comm-visual-verify/scripts/verify-ui.mjs --out-dir /tmp/pet-comm-verify'
    ```
-3. Inspect the generated screenshots (`pet-mode-desktop.png`, `pet-mode-mobile.png`, `parent-mode-20.png`, `voice-modal.png`, `editor-custom-rgb-modal.png`) with `read_file` and verify:
+3. Inspect the generated screenshots (`pet-mode-desktop.png`, `pet-mode-mobile.png`, `parent-mode-20.png`, `voice-pack-loading-progress.png`, `voice-modal.png`, `parent-voice-pack-ready.png`, `editor-custom-rgb-modal.png`) with `read_file` and verify:
    - Single-word button labels (`Outside`, `Frisbee`, etc.) stay on a single line on `390x844` mobile portrait.
    - Parent Mode `.parent-slot` action buttons (`Test`, `Move`, `Edit`) fit cleanly inside card bounds at 16 and 20 slots.
    - Sticky `.dialog-footer` bars sit flush with the bottom of `<dialog>` with zero scrolled content bleeding underneath.
@@ -31,3 +31,4 @@ While `npm test` (`vitest` + `happy-dom` + `fake-indexeddb`) verifies unit logic
 - **ESM resolution outside `node_modules`**: Uses `createRequire(path.join(process.env.PW_ROOT, 'index.js'))('playwright')` because Node ESM `import` ignores `NODE_PATH`.
 - **Cached Chromium discovery**: Automatically locates `~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome` and passes `executablePath` when `playwright@latest` expects a newer browser build revision.
 - **Pet Comm unlock gesture**: Dispatches `pointerdown` on `.corner-lock-btn` (not `click`) and holds for `3200ms` to enter Parent Mode.
+- **Localhost `<progress>` bar capture**: Throttles `**/voice-pack/*.mp3` by `35ms` via `page.route()` so background download progress (`<progress class="task-progress-bar">`) is deterministically visible and screenshotted before localhost fetches complete.
