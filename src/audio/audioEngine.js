@@ -1,3 +1,5 @@
+import { speakTts } from './ttsVoice.js';
+
 const SPLIT_PAW_GUARD_MS = 100;
 
 let audioCtx = null;
@@ -176,20 +178,8 @@ function playDecodedBuffer(audioBuffer) {
   return true;
 }
 
-export function speakTtsFallback(text) {
-  const phrase = String(text || '').trim();
-  if (!phrase || typeof window === 'undefined' || !('speechSynthesis' in window)) {
-    return false;
-  }
-  try {
-    const utterance = new SpeechSynthesisUtterance(phrase);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    window.speechSynthesis.speak(utterance);
-    return true;
-  } catch {
-    return false;
-  }
+export function speakTtsFallback(text, voiceSettings) {
+  return speakTts(text, voiceSettings);
 }
 
 export function triggerButtonSound(button, options = {}) {
@@ -222,11 +212,11 @@ export function triggerButtonSound(button, options = {}) {
     return { played: true, mode: 'buffer' };
   }
 
-  const spoke = speakTtsFallback(button.ttsText || button.label);
+  const spoke = speakTtsFallback(button.ttsText || button.label, options.voiceSettings);
   return { played: spoke, mode: 'tts' };
 }
 
-export async function previewAudioPayload(audioPayload, fallbackText) {
+export async function previewAudioPayload(audioPayload, fallbackText, voiceSettings) {
   stopActiveAudio();
   if (audioPayload && (audioPayload.buffer || audioPayload.blob)) {
     try {
@@ -237,5 +227,5 @@ export async function previewAudioPayload(audioPayload, fallbackText) {
       // Fall back to TTS below
     }
   }
-  return speakTtsFallback(fallbackText);
+  return speakTtsFallback(fallbackText, voiceSettings);
 }

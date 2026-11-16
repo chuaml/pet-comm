@@ -7,6 +7,7 @@ import {
 import { createVoiceRecorder } from '../audio/recorder.js';
 import { deleteButton, saveButtonWithAudio } from '../storage/db.js';
 import { PET_COLORS, PET_ICONS } from '../utils/defaults.js';
+import { getButtonPreset } from '../utils/presets.js';
 
 export function createEditorActions(state, setState) {
   let activeRecorder = null;
@@ -75,6 +76,17 @@ export function createEditorActions(state, setState) {
     },
 
     onUpdateDraft: updateDraft,
+
+    onApplyPreset(presetId) {
+      const preset = getButtonPreset(presetId);
+      if (!preset) return;
+      updateDraft({
+        label: preset.label,
+        ttsText: preset.ttsText,
+        colorId: preset.colorId,
+        iconId: preset.iconId,
+      });
+    },
 
     onCloseEditor() {
       cancelActiveRecording();
@@ -153,7 +165,11 @@ export function createEditorActions(state, setState) {
           : draft.hasAudio
             ? state.audioMap.get(draft.id)
             : null;
-      previewAudioPayload(payload, draft.ttsText || draft.label || 'Button');
+      previewAudioPayload(
+        payload,
+        draft.ttsText || draft.label || 'Button',
+        state.settings
+      );
     },
 
     onClearDraftAudio() {

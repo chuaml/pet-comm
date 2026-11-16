@@ -188,6 +188,10 @@ export function boardView(state, actions) {
             </select>
           </label>
 
+          <button type="button" class="toolbar-btn" @click=${actions.onOpenVoiceModal}>
+            ${renderIcon('tune', 'btn-inline-svg')} Voice Tune
+          </button>
+
           <button type="button" class="toolbar-btn" @click=${actions.onOpenActivityModal}>
             ${renderIcon('chart', 'btn-inline-svg')} Logs &amp; Backup
           </button>

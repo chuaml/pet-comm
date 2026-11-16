@@ -1,0 +1,248 @@
+/* Quick Button Type Preset Picker */
+.preset-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.45rem;
+  margin-block-start: 0.45rem;
+}
+
+.preset-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-block-size: 48px;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.55rem;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  background: #0b192e;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: start;
+}
+
+.preset-type-chip[aria-pressed='true'] {
+  border-color: var(--accent-yellow);
+  background: rgba(255, 214, 0, 0.16);
+}
+
+.preset-chip-icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: 0.4rem;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  border: 1.5px solid var(--chip-border);
+  flex: none;
+}
+
+.preset-chip-svg {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+}
+
+/* Voice Settings Modal & Tone Presets */
+.voice-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 0.5rem;
+  margin-block-start: 0.45rem;
+}
+
+.voice-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.15rem;
+  min-block-size: 52px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.55rem;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  background: #0b192e;
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.voice-preset-btn small {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.voice-preset-btn[aria-pressed='true'] {
+  border-color: var(--accent-yellow);
+  background: rgba(255, 214, 0, 0.16);
+}
+
+.voice-sliders-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.slider-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.slider-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.slider-label-row label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.slider-readout {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--accent-yellow);
+}
+
+.voice-sample-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-block-start: 0.5rem;
+}
+
+.voice-dialog-footer {
+  margin-block-start: 0.25rem;
+}
+
+/* Brand-Consistent Native Range Slider */
+input[type='range'].voice-range {
+  --slider-track-size: 0.55rem;
+  --slider-thumb-size: 1.4rem;
+  --slider-track-radius: 999px;
+  --slider-thumb-radius: 50%;
+  --slider-track-color: #64748b;
+  --slider-fill-color: var(--accent-yellow);
+  --slider-thumb-color: var(--accent-yellow);
+  --slider-direction: to right;
+
+  &:dir(rtl) {
+    --slider-direction: to left;
+  }
+
+  --attr-min: attr(min type(<number>), 0);
+  --attr-max: attr(max type(<number>), 100);
+  --control-value: attr(value type(<number>), 50);
+  --slider-progress: calc(
+    progress(var(--control-value), var(--attr-min), var(--attr-max)) * 100%
+  );
+
+  appearance: none;
+  inline-size: 100%;
+  block-size: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+@supports not (opacity: progress(1, 0, 100)) {
+  input[type='range'].voice-range {
+    --slider-progress: calc(
+      (var(--control-value) - var(--attr-min)) /
+        (var(--attr-max) - var(--attr-min)) * 100%
+    );
+  }
+}
+
+input[type='range'].voice-range::-webkit-slider-runnable-track {
+  block-size: var(--slider-track-size);
+  border: 0;
+  border-radius: var(--slider-track-radius);
+  background: linear-gradient(
+    var(--slider-direction),
+    var(--slider-fill-color) var(--slider-progress),
+    var(--slider-track-color) var(--slider-progress)
+  );
+}
+
+input[type='range'].voice-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  inline-size: var(--slider-thumb-size);
+  block-size: var(--slider-thumb-size);
+  margin-block-start: calc((var(--slider-track-size) - var(--slider-thumb-size)) / 2);
+  border: 2px solid #071324;
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-color);
+}
+
+input[type='range'].voice-range::-moz-range-track {
+  block-size: var(--slider-track-size);
+  border: 0;
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-track-color);
+}
+
+input[type='range'].voice-range::-moz-range-progress {
+  block-size: var(--slider-track-size);
+  border-radius: var(--slider-track-radius);
+  background: var(--slider-fill-color);
+}
+
+input[type='range'].voice-range::-moz-range-thumb {
+  inline-size: var(--slider-thumb-size);
+  block-size: var(--slider-thumb-size);
+  border: 2px solid #071324;
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-color);
+}
+
+input[type='range'].voice-range:focus-visible {
+  outline: 3px solid var(--accent-yellow);
+  outline-offset: 4px;
+  border-radius: 0.35rem;
+}
+
+/* Sticky Dialog Footer Flush Fix & Dense Parent Grid Adaptations */
+.editor-form:has(> .dialog-footer),
+.activity-dialog-body:has(> .dialog-footer) {
+  padding-block-end: 0;
+}
+
+.editor-form > .dialog-footer,
+.activity-dialog-body > .dialog-footer {
+  margin-block-end: 0;
+}
+
+.soundboard-grid-parent:is([data-density='12'], [data-density='16'], [data-density='20']) {
+  grid-template-rows: none;
+  grid-auto-rows: minmax(10rem, 1fr);
+}
+
+.soundboard-grid-parent:is([data-density='12'], [data-density='16'], [data-density='20']) .parent-slot {
+  padding: 0.5rem;
+}
+
+.soundboard-grid-parent:is([data-density='12'], [data-density='16'], [data-density='20']) .slot-btn {
+  min-block-size: 36px;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 720px) {
+  .soundboard-grid-parent:is([data-density='12'], [data-density='16'], [data-density='20']) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(9.5rem, auto);
+  }
+}

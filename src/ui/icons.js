@@ -39,6 +39,46 @@ const PATHS = {
   hexagon: svg`
     <polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="currentColor"/>
   `,
+  frisbee: svg`
+    <ellipse cx="56" cy="44" rx="34" ry="14" transform="rotate(-14 56 44)" fill="currentColor"/>
+    <ellipse cx="55" cy="41" rx="20" ry="6.5" transform="rotate(-14 55 41)" fill="none" stroke="var(--pad-bg, #071324)" stroke-width="4"/>
+    <path d="M12 62l22-6M16 74l28-7M28 84l22-5" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>
+  `,
+  come: svg`
+    <circle cx="50" cy="74" r="13" fill="currentColor"/>
+    <path d="M50 12v36M32 32l18 18 18-18" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M22 74a28 28 0 0 1 8-19M78 74a28 28 0 0 0-8-19" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round"/>
+  `,
+  sit: svg`
+    <circle cx="62" cy="24" r="11" fill="currentColor"/>
+    <path d="M55 16l-6-8 10 3Z" fill="currentColor"/>
+    <path d="M68 22h11a5 5 0 0 1 0 10h-9Z" fill="currentColor"/>
+    <path d="M56 34L36 62c-5 7-2 18 8 18h22v-12H52l12-18v30h10V42a10 10 0 0 0-18-8Z" fill="currentColor"/>
+    <path d="M18 86h64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+  `,
+  stay: svg`
+    <path d="M33 48V22a5.5 5.5 0 0 1 11 0v22M44 44V16a5.5 5.5 0 0 1 11 0v28M55 44V20a5.5 5.5 0 0 1 11 0v26M66 46V30a5.5 5.5 0 0 1 11 0v28c0 16-11 28-26 28h-4c-14 0-25-10-25-24V46a6 6 0 0 1 11-2v6" fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  `,
+  up: svg`
+    <polygon points="50,12 86,50 65,50 65,88 35,88 35,50 14,50" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+  `,
+  down: svg`
+    <polygon points="50,88 14,50 35,50 35,12 65,12 65,50 86,50" fill="currentColor" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>
+  `,
+  ok: svg`
+    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="8"/>
+    <path d="M30 51l14 15 27-30" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  `,
+  no: svg`
+    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="8"/>
+    <path d="M24 24l52 52" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+  `,
+  tune: svg`
+    <path d="M16 28h68M16 50h68M16 72h68" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="36" cy="28" r="9" fill="currentColor"/>
+    <circle cx="66" cy="50" r="9" fill="currentColor"/>
+    <circle cx="44" cy="72" r="9" fill="currentColor"/>
+  `,
   lock: svg`
     <rect x="22" y="44" width="56" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="8"/>
     <path d="M34 44V30a16 16 0 0 1 32 0v14" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/>

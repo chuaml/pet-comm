@@ -1,10 +1,36 @@
-export const GRID_DENSITIES = [1, 2, 4, 6, 9];
+import { BUTTON_TYPE_PRESETS, DEFAULT_VOICE_SETTINGS, normalizeVoiceSettings } from './presets.js';
+
+export const GRID_DENSITIES = [4, 9, 12, 16, 20];
 export const COOLDOWN_OPTIONS = [250, 500, 750, 1000, 1500];
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  gridDensity: 4,
+  gridDensity: 16,
   cooldownMs: 500,
+  ...DEFAULT_VOICE_SETTINGS,
 });
+
+export function normalizeGridDensity(density) {
+  if (GRID_DENSITIES.includes(density)) return density;
+  if (typeof density === 'number' && Number.isFinite(density)) {
+    if (density <= 4) return 4;
+    if (density <= 9) return 9;
+    if (density <= 12) return 12;
+    if (density <= 16) return 16;
+    return 20;
+  }
+  return DEFAULT_SETTINGS.gridDensity;
+}
+
+export function normalizeSettings(raw) {
+  const cooldown = Number(raw?.cooldownMs);
+  return {
+    gridDensity: normalizeGridDensity(raw?.gridDensity),
+    cooldownMs: Number.isFinite(cooldown)
+      ? Math.min(Math.max(Math.round(cooldown), 100), 5000)
+      : DEFAULT_SETTINGS.cooldownMs,
+    ...normalizeVoiceSettings(raw),
+  };
+}
 
 export const PET_COLORS = Object.freeze([
   {
@@ -51,11 +77,19 @@ export const PET_COLORS = Object.freeze([
 
 export const PET_ICONS = Object.freeze([
   { id: 'door', name: 'Door' },
-  { id: 'ball', name: 'Ball' },
   { id: 'bowl', name: 'Food Bowl' },
   { id: 'water', name: 'Water Drop' },
   { id: 'bone', name: 'Treat Bone' },
   { id: 'paw', name: 'Paw' },
+  { id: 'ball', name: 'Ball' },
+  { id: 'frisbee', name: 'Frisbee' },
+  { id: 'come', name: 'Come' },
+  { id: 'sit', name: 'Sit' },
+  { id: 'stay', name: 'Stay' },
+  { id: 'up', name: 'Up Arrow' },
+  { id: 'down', name: 'Down Arrow' },
+  { id: 'ok', name: 'OK Check' },
+  { id: 'no', name: 'No Slash' },
   { id: 'star', name: 'Star' },
   { id: 'circle', name: 'Circle' },
   { id: 'triangle', name: 'Triangle' },
@@ -71,48 +105,16 @@ export function isValidIconId(iconId) {
 }
 
 export function createDefaultButtons(now = Date.now()) {
-  return [
-    {
-      id: 'btn-outside',
-      label: 'Outside',
-      ttsText: 'Outside',
-      colorId: 'royal-blue',
-      iconId: 'door',
-      slotIndex: 0,
-      hasAudio: false,
-      updatedAt: now,
-    },
-    {
-      id: 'btn-play',
-      label: 'Play',
-      ttsText: 'Play',
-      colorId: 'bright-yellow',
-      iconId: 'ball',
-      slotIndex: 1,
-      hasAudio: false,
-      updatedAt: now,
-    },
-    {
-      id: 'btn-food',
-      label: 'Food',
-      ttsText: 'Food',
-      colorId: 'dark-navy',
-      iconId: 'bowl',
-      slotIndex: 2,
-      hasAudio: false,
-      updatedAt: now,
-    },
-    {
-      id: 'btn-water',
-      label: 'Water',
-      ttsText: 'Water',
-      colorId: 'crisp-white',
-      iconId: 'water',
-      slotIndex: 3,
-      hasAudio: false,
-      updatedAt: now,
-    },
-  ];
+  return BUTTON_TYPE_PRESETS.map((preset, idx) => ({
+    id: `btn-${preset.id}`,
+    label: preset.label,
+    ttsText: preset.ttsText,
+    colorId: preset.colorId,
+    iconId: preset.iconId,
+    slotIndex: idx,
+    hasAudio: false,
+    updatedAt: now,
+  }));
 }
 
 export function buildGridSlots(buttons, density) {

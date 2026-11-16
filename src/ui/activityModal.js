@@ -36,15 +36,24 @@ export function installLightDismissFallback(dialog) {
   dialog.dataset.lightDismissBound = 'true';
 
   if (!('closedBy' in HTMLDialogElement.prototype)) {
-    dialog.addEventListener('click', (event) => {
-      if (event.target !== dialog) return;
+    const isOutside = (event) => {
       const rect = dialog.getBoundingClientRect();
-      const inside =
-        rect.top <= event.clientY &&
-        event.clientY <= rect.top + rect.height &&
-        rect.left <= event.clientX &&
-        event.clientX <= rect.left + rect.width;
-      if (!inside) dialog.close();
+      return (
+        event.clientX < rect.left ||
+        event.clientX > rect.right ||
+        event.clientY < rect.top ||
+        event.clientY > rect.bottom
+      );
+    };
+    let pressedOutside = false;
+    dialog.addEventListener('pointerdown', (event) => {
+      pressedOutside = event.target === dialog && isOutside(event);
+    });
+    dialog.addEventListener('pointerup', (event) => {
+      if (pressedOutside && event.target === dialog && isOutside(event)) {
+        dialog.close();
+      }
+      pressedOutside = false;
     });
   }
 }

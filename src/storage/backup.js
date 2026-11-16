@@ -1,8 +1,7 @@
 import {
-  DEFAULT_SETTINGS,
   getColorPreset,
-  GRID_DENSITIES,
   isValidIconId,
+  normalizeSettings,
   PET_ICONS,
 } from '../utils/defaults.js';
 
@@ -61,14 +60,7 @@ export async function serializeBackup({ settings, buttons, audioMap, logs = [] }
     app: BACKUP_APP_ID,
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    settings: {
-      gridDensity: GRID_DENSITIES.includes(settings?.gridDensity)
-        ? settings.gridDensity
-        : DEFAULT_SETTINGS.gridDensity,
-      cooldownMs: Number.isFinite(settings?.cooldownMs)
-        ? Math.min(Math.max(Math.round(settings.cooldownMs), 100), 5000)
-        : DEFAULT_SETTINGS.cooldownMs,
-    },
+    settings: normalizeSettings(settings),
     buttons: serializedButtons,
     activityLog: logs.slice(0, 5000).map((entry) => ({
       buttonId: String(entry.buttonId || ''),
@@ -99,14 +91,7 @@ export function parseAndValidateBackup(jsonString) {
     throw new Error('Backup file is missing a buttons array.');
   }
 
-  const settings = {
-    gridDensity: GRID_DENSITIES.includes(parsed.settings?.gridDensity)
-      ? parsed.settings.gridDensity
-      : DEFAULT_SETTINGS.gridDensity,
-    cooldownMs: Number.isFinite(parsed.settings?.cooldownMs)
-      ? Math.min(Math.max(Math.round(parsed.settings.cooldownMs), 100), 5000)
-      : DEFAULT_SETTINGS.cooldownMs,
-  };
+  const settings = normalizeSettings(parsed.settings);
 
   const seenIds = new Set();
   const usedSlots = new Set();

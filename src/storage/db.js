@@ -1,4 +1,4 @@
-import { createDefaultButtons, DEFAULT_SETTINGS } from '../utils/defaults.js';
+import { createDefaultButtons, DEFAULT_SETTINGS, normalizeSettings } from '../utils/defaults.js';
 
 const DB_NAME = 'pet-comm-db';
 const DB_VERSION = 1;
@@ -80,7 +80,7 @@ export async function initStorage() {
     reqToPromise(readTx.objectStore('logs').getAll()),
   ]);
 
-  let settings = boardSettings ? { gridDensity: boardSettings.gridDensity, cooldownMs: boardSettings.cooldownMs } : null;
+  let settings = boardSettings ? normalizeSettings(boardSettings) : null;
   let buttons = rawButtons || [];
 
   if (!boardSettings && buttons.length === 0) {
@@ -104,13 +104,14 @@ export async function initStorage() {
 }
 
 export async function saveSettings(settings) {
+  const clean = normalizeSettings(settings);
   const db = await openDb();
   if (!db) {
-    mem.settings = { ...settings };
+    mem.settings = { ...clean };
     return;
   }
   const tx = db.transaction('settings', 'readwrite');
-  tx.objectStore('settings').put({ key: 'board', ...settings });
+  tx.objectStore('settings').put({ key: 'board', ...clean });
   await txDone(tx);
 }
 
@@ -195,6 +196,7 @@ export async function clearActivityLogs() {
 }
 
 export async function replaceAllData({ settings, buttons, audioEntries, logs }) {
+  const cleanSettings = normalizeSettings(settings);
   const prepared = await Promise.all(
     audioEntries.map(async (e) => ({
       buttonId: e.buttonId,
@@ -205,7 +207,7 @@ export async function replaceAllData({ settings, buttons, audioEntries, logs }) 
   );
   const db = await openDb();
   if (!db) {
-    mem.settings = { ...settings };
+    mem.settings = { ...cleanSettings };
     mem.buttons = new Map(buttons.map((b) => [b.id, b]));
     mem.audio = new Map(prepared.map((a) => [a.buttonId, normalizeAudioRecord(a)]));
     mem.logs = [...logs].slice(0, MAX_LOGS);
@@ -214,7 +216,7 @@ export async function replaceAllData({ settings, buttons, audioEntries, logs }) 
   }
   const tx = db.transaction(['settings', 'buttons', 'audio', 'logs'], 'readwrite');
   for (const name of ['settings', 'buttons', 'audio', 'logs']) tx.objectStore(name).clear();
-  tx.objectStore('settings').put({ key: 'board', ...settings });
+  tx.objectStore('settings').put({ key: 'board', ...cleanSettings });
   for (const btn of buttons) tx.objectStore('buttons').put(btn);
   for (const audio of prepared) tx.objectStore('audio').put(audio);
   for (const log of logs.slice(0, MAX_LOGS)) {

@@ -45,25 +45,15 @@ body {
 }
 
 .pet-viewport {
-  padding-block: max(0.85rem, env(safe-area-inset-top)) max(0.85rem, env(safe-area-inset-bottom));
-  padding-inline: max(0.85rem, env(safe-area-inset-left)) max(0.85rem, env(safe-area-inset-right));
+  padding-block: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-bottom));
+  padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
 }
 
 .soundboard-grid {
   inline-size: 100%;
   block-size: 100%;
   display: grid;
-  gap: clamp(0.75rem, 1.8vmin, 1.5rem);
-}
-
-.soundboard-grid[data-density='1'] {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.soundboard-grid[data-density='2'] {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.45rem, 1.35vmin, 1.25rem);
 }
 
 .soundboard-grid[data-density='4'] {
@@ -71,24 +61,34 @@ body {
   grid-template-rows: repeat(2, minmax(0, 1fr));
 }
 
-.soundboard-grid[data-density='6'] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
-}
-
 .soundboard-grid[data-density='9'] {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
 }
 
+.soundboard-grid[data-density='12'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+
+.soundboard-grid[data-density='16'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+
+.soundboard-grid[data-density='20'] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+}
+
 @media (orientation: landscape) {
-  .soundboard-grid[data-density='2'] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: minmax(0, 1fr);
+  .soundboard-grid[data-density='12'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
   }
-  .soundboard-grid[data-density='6'] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+  .soundboard-grid[data-density='20'] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -99,15 +99,16 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(0.4rem, 3cqmin, 1.25rem);
+  gap: clamp(0.2rem, 3cqmin, 1.1rem);
   inline-size: 100%;
   block-size: 100%;
-  padding: 0.75rem;
-  border-radius: var(--radius-lg);
-  border: 6px solid var(--pad-border, #93c5fd);
+  padding-block: clamp(0.3rem, 4cqb, 0.8rem);
+  padding-inline: clamp(0.2rem, 3cqi, 0.75rem);
+  border-radius: clamp(0.75rem, 12cqmin, var(--radius-lg));
+  border: clamp(3px, 3cqmin, 6px) solid var(--pad-border, #93c5fd);
   background-color: var(--pad-bg, #0057b8);
   color: var(--pad-fg, #ffffff);
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.42), 0 14px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.42), 0 12px 24px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -121,7 +122,7 @@ body {
 
 .pet-pad:active,
 .pet-pad[data-pressed='true'] {
-  translate: 0 6px;
+  translate: 0 5px;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.42), 0 4px 10px rgba(0, 0, 0, 0.3);
   filter: brightness(1.07);
 }
@@ -134,23 +135,23 @@ body {
 
 .pad-icon {
   display: block;
-  inline-size: min(44cqmin, 11rem);
-  block-size: min(44cqmin, 11rem);
+  inline-size: min(42cqmin, 10rem);
+  block-size: min(42cqmin, 10rem);
 }
 
 .pad-label {
   pointer-events: none;
   font-weight: 900;
-  letter-spacing: 0.02em;
-  line-height: 1.1;
+  letter-spacing: 0.01em;
+  line-height: 1.08;
   text-align: center;
-  font-size: clamp(1.35rem, 0.9rem + 6cqmin, 3.3rem);
+  font-size: clamp(0.68rem, min(15.5cqi, 24cqb), 3.1rem);
   max-inline-size: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .pet-pad-spacer {
-  border-radius: var(--radius-lg);
+  border-radius: clamp(0.75rem, 2.5vmin, var(--radius-lg));
   border: 2px dashed rgba(148, 163, 184, 0.14);
   background: rgba(15, 23, 42, 0.25);
 }

@@ -27,6 +27,6 @@ AI Agents **MUST** adhere strictly to the following technical constraints:
 
 1.  **Dependency Discipline:** Keep `"lit-html": "3.3.3"` as the sole runtime dependency and `"vite"` as the sole devDependency. Use Node's built-in `node:test` runner for automated tests and inline SVGs for icons.
 2.  **Touch & Pointer Precision:** Bind pet soundboard buttons strictly to `pointerdown` (never `click`), with `touch-action: manipulation;` and `user-select: none; -webkit-user-select: none;`.
-3.  **Spatial Consistency:** Grid densities (`1`, `2`, `4`, `6`, `9`) maintain fixed spatial slots so pets' muscle memory is preserved; unused slots remain inert in Pet Mode and overflow buttons stay parked in Parent Mode.
+3.  **Spatial Consistency:** Grid densities (`4`, `9`, `12`, `16`, `20`) maintain fixed spatial slots so pets' muscle memory is preserved; unused slots remain inert in Pet Mode and overflow buttons stay parked in Parent Mode.
 4.  **Defensive Web APIs:** Feature-detect `AudioContext`, `MediaRecorder`, `navigator.wakeLock`, `indexedDB`, `speechSynthesis`, and `serviceWorker` before calling.
 5.  **File Size Limit:** Keep every source file strictly under **250 lines of code**, splitting responsibilities cleanly across modules.

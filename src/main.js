@@ -6,18 +6,22 @@ import {
   triggerButtonSound,
   unlockAudioEngine,
 } from './audio/audioEngine.js';
+import { listAvailableVoices, subscribeVoicesChanged } from './audio/ttsVoice.js';
 import { appendActivityLog, initStorage, saveButtons, saveSettings } from './storage/db.js';
 import './style.css';
 import './styles/lock.css';
 import './styles/parent.css';
 import './styles/dialogs.css';
 import './styles/activity.css';
+import './styles/voiceAndPresets.css';
 import { createActivityActions } from './ui/activityController.js';
 import { activityDialogView, installLightDismissFallback } from './ui/activityModal.js';
 import { boardView } from './ui/board.js';
 import { editorDialogView } from './ui/editor.js';
 import { createEditorActions } from './ui/editorController.js';
 import { createHoldUnlockController } from './ui/lock.js';
+import { createVoiceActions } from './ui/voiceController.js';
+import { voiceDialogView } from './ui/voiceModal.js';
 import { DEFAULT_SETTINGS, swapOrMoveButtonSlot } from './utils/defaults.js';
 
 const appRoot = document.getElementById('app');
@@ -36,9 +40,11 @@ const state = {
   buttons: [],
   audioMap: new Map(),
   logs: [],
+  availableVoices: [],
   flashingButtonId: null,
   movingButtonId: null,
   editorDraft: null,
+  voiceModalOpen: false,
   activityModalOpen: false,
   confirmClearLogs: false,
   pendingImport: null,
@@ -50,7 +56,7 @@ const state = {
 function syncModalElement(id, shouldOpen) {
   const dialog = document.getElementById(id);
   if (!dialog) return;
-  if (id === 'activity-dialog') installLightDismissFallback(dialog);
+  if (id === 'activity-dialog' || id === 'voice-dialog') installLightDismissFallback(dialog);
   if (shouldOpen && !dialog.open) dialog.showModal();
   else if (!shouldOpen && dialog.open) dialog.close();
 }
@@ -61,11 +67,13 @@ function setState(patch) {
     html`
       ${boardView(state, actions)}
       ${editorDialogView(state, actions)}
+      ${voiceDialogView(state, actions)}
       ${activityDialogView(state, actions)}
     `,
     appRoot
   );
   syncModalElement('editor-dialog', Boolean(state.editorDraft));
+  syncModalElement('voice-dialog', state.voiceModalOpen);
   syncModalElement('activity-dialog', state.activityModalOpen);
 }
 
@@ -99,16 +107,18 @@ const lockController = createHoldUnlockController({
 });
 
 const editorActions = createEditorActions(state, setState);
+const voiceActions = createVoiceActions(state, setState);
 const activityActions = createActivityActions(state, setState);
 
 const actions = {
   ...editorActions,
+  ...voiceActions,
   ...activityActions,
   lockController,
 
   async onUnlockAudio() {
     const unlocked = await unlockAudioEngine();
-    setState({ audioUnlocked: unlocked });
+    setState({ audioUnlocked: unlocked, availableVoices: listAvailableVoices() });
     syncWakeLock();
   },
 
@@ -117,7 +127,10 @@ const actions = {
       unlockAudioEngine().then((unlocked) => setState({ audioUnlocked: unlocked }));
     }
     syncWakeLock();
-    const outcome = triggerButtonSound(btn, { cooldownMs: state.settings.cooldownMs });
+    const outcome = triggerButtonSound(btn, {
+      cooldownMs: state.settings.cooldownMs,
+      voiceSettings: state.settings,
+    });
     if (!outcome.played) return;
 
     if (flashTimer) clearTimeout(flashTimer);
@@ -134,7 +147,14 @@ const actions = {
 
   onExitParentMode() {
     editorActions.cancelActiveRecording();
-    setState({ mode: 'pet', movingButtonId: null, editorDraft: null, activityModalOpen: false });
+    stopActiveAudio();
+    setState({
+      mode: 'pet',
+      movingButtonId: null,
+      editorDraft: null,
+      voiceModalOpen: false,
+      activityModalOpen: false,
+    });
     syncWakeLock();
   },
 
@@ -150,7 +170,8 @@ const actions = {
     await saveSettings(settings);
   },
 
-  onPreviewButton: (btn) => triggerButtonSound(btn, { bypassGuards: true }),
+  onPreviewButton: (btn) =>
+    triggerButtonSound(btn, { bypassGuards: true, voiceSettings: state.settings }),
   onStartMove: (buttonId) => setState({ movingButtonId: buttonId }),
   onCancelMove: () => setState({ movingButtonId: null }),
 
@@ -194,11 +215,13 @@ document.addEventListener('visibilitychange', () => syncWakeLock());
 async function bootstrap() {
   const hydrated = await initStorage();
   await preloadAllAudio(hydrated.audioMap);
+  subscribeVoicesChanged((availableVoices) => setState({ availableVoices }));
   setState({
     settings: hydrated.settings,
     buttons: hydrated.buttons,
     audioMap: hydrated.audioMap,
     logs: hydrated.logs,
+    availableVoices: listAvailableVoices(),
     audioUnlocked: isAudioUnlocked(),
   });
   syncWakeLock();

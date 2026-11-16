@@ -2,6 +2,7 @@ import { html } from 'lit-html';
 import { isRecordingSupported } from '../audio/recorder.js';
 import { PET_COLORS, PET_ICONS } from '../utils/defaults.js';
 import { renderIcon } from './icons.js';
+import { presetPickerView } from './presetPickerView.js';
 
 export function editorDialogView(state, actions) {
   const draft = state.editorDraft;
@@ -17,9 +18,7 @@ export function editorDialogView(state, actions) {
         ? html`
             <div class="dialog-header">
               <h2 id="editor-dialog-title" class="dialog-title">
-                ${draft.isNew
-                  ? `Add Button (Slot ${draft.slotIndex + 1})`
-                  : `Edit "${draft.initialLabel}"`}
+                ${draft.isNew ? `Add Button (Slot ${draft.slotIndex + 1})` : `Edit "${draft.initialLabel}"`}
               </h2>
               <button
                 type="button"
@@ -32,6 +31,8 @@ export function editorDialogView(state, actions) {
             </div>
 
             <form class="editor-form" @submit=${actions.onSaveEditor}>
+              ${presetPickerView(draft, actions)}
+
               <div class="form-row-split">
                 <div class="field-group">
                   <label for="btn-label-input">
@@ -134,23 +135,13 @@ export function editorDialogView(state, actions) {
                   </div>
 
                   <div class="recorder-preview-btns">
-                    <button
-                      type="button"
-                      class="slot-btn"
-                      @click=${actions.onPreviewDraftAudio}
-                    >
+                    <button type="button" class="slot-btn" @click=${actions.onPreviewDraftAudio}>
                       ${renderIcon('play', 'btn-inline-svg')} Test Sound
                     </button>
                     ${draft.hasAudio
-                      ? html`
-                          <button
-                            type="button"
-                            class="slot-btn"
-                            @click=${actions.onClearDraftAudio}
-                          >
-                            Use TTS Instead
-                          </button>
-                        `
+                      ? html`<button type="button" class="slot-btn" @click=${actions.onClearDraftAudio}>
+                          Use TTS Instead
+                        </button>`
                       : null}
                   </div>
                 </div>
@@ -173,14 +164,12 @@ export function editorDialogView(state, actions) {
                             : 'Hold or Tap to Record Voice (max 5s)'}
                         </button>
                         ${draft.isRecording
-                          ? html`
-                              <progress
-                                class="record-linear-progress"
-                                value=${draft.recordingElapsedMs}
-                                max="5000"
-                                aria-label="Recording duration"
-                              ></progress>
-                            `
+                          ? html`<progress
+                              class="record-linear-progress"
+                              value=${draft.recordingElapsedMs}
+                              max="5000"
+                              aria-label="Recording duration"
+                            ></progress>`
                           : null}
                       </div>
                     `
@@ -188,9 +177,7 @@ export function editorDialogView(state, actions) {
                       Microphone capture is unavailable on this device; Text-to-Speech will be used.
                     </p>`}
 
-                ${draft.recordError
-                  ? html`<p class="error-banner" role="alert">${draft.recordError}</p>`
-                  : null}
+                ${draft.recordError ? html`<p class="error-banner" role="alert">${draft.recordError}</p>` : null}
               </section>
 
               <div class="dialog-footer">
@@ -198,11 +185,7 @@ export function editorDialogView(state, actions) {
                   ${!draft.isNew
                     ? draft.confirmDelete
                       ? html`
-                          <button
-                            type="button"
-                            class="btn-danger"
-                            @click=${actions.onConfirmDeleteButton}
-                          >
+                          <button type="button" class="btn-danger" @click=${actions.onConfirmDeleteButton}>
                             Confirm Delete
                           </button>
                           <button
@@ -226,9 +209,7 @@ export function editorDialogView(state, actions) {
                 </div>
 
                 <div class="save-zone">
-                  <button type="button" class="slot-btn" @click=${actions.onCloseEditor}>
-                    Cancel
-                  </button>
+                  <button type="button" class="slot-btn" @click=${actions.onCloseEditor}>Cancel</button>
                   <button type="submit" class="btn-primary">Save Button</button>
                 </div>
               </div>
