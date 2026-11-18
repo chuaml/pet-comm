@@ -12,6 +12,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:agent": "vitest run --reporter=agent --silent=passed-only",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "icons": "node scripts/generate-icons.mjs",

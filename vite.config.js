@@ -3,6 +3,21 @@ import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, posix, relative, sep } from 'node:path';
 import { defineConfig } from 'vite';
 
+// Agent-optimized test output: failures-only reporter, no console noise from
+// passing tests, compact coverage. Vitest auto-detects some agents itself; this
+// extends detection (e.g. Antigravity) and allows forcing via AI_AGENT=1.
+const AGENT_ENV_KEYS = ['AI_AGENT', 'ANTIGRAVITY_AGENT', 'GEMINI_CLI', 'CLAUDECODE', 'CURSOR_AGENT', 'CODEX_SANDBOX'];
+const isAgentRun = AGENT_ENV_KEYS.some((key) => Boolean(process.env[key]));
+
+// Watch mode never exits, which hangs an agent's command. Agent runs default to
+// a single run (`watch: false` below) and an explicit watch request fails fast.
+const cliArgs = process.argv.slice(2);
+const isVitestCli = /vitest/.test(process.argv[1] ?? '');
+const wantsWatch = ['watch', 'dev'].includes(cliArgs[0]) || cliArgs.some((arg) => ['--watch', '-w', '--watch=true'].includes(arg));
+if (isAgentRun && isVitestCli && wantsWatch) {
+  throw new Error('Watch mode is disabled for AI agent runs because it never exits. Use `npm test` or `npx vitest run <file>`.');
+}
+
 function collectFiles(dir, baseDir = dir, acc = []) {
   for (const entry of readdirSync(dir)) {
     const fullPath = join(dir, entry);
@@ -61,10 +76,14 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./tests/setup.js'],
     include: ['tests/**/*.test.js'],
+    ...(isAgentRun ? { reporters: ['agent'], silent: 'passed-only', watch: false } : {}),
+    onConsoleLog(log) {
+      if (log.includes('Lit is in dev mode')) return false;
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.js'],
-      reporter: ['text', 'html'],
+      reporter: isAgentRun ? [['text', { skipFull: true }], 'text-summary'] : ['text', 'html'],
     },
   },
 });
