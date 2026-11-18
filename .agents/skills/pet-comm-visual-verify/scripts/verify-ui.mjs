@@ -72,7 +72,7 @@ try {
 
   const unlockBtn = page.locator('.audio-unlock-btn');
   if (await unlockBtn.isVisible()) {
-    await unlockBtn.dispatchEvent('pointerdown', { button: 0 });
+    await unlockBtn.click();
   }
   await page.waitForTimeout(150);
 
@@ -108,6 +108,10 @@ try {
   await page.screenshot({ path: path.join(outDir, 'voice-pack-loading-progress.png') });
   await page.waitForSelector('.voice-pack-ready-row', { timeout: 8000 });
   await page.screenshot({ path: path.join(outDir, 'voice-modal.png') });
+  await page.locator('.speech-diag-summary').click();
+  await page.locator('.speech-diag-actions').scrollIntoViewIfNeeded();
+  assert.match(await page.locator('.speech-diag-report').inputValue(), /Pet Comm speech report/);
+  await page.screenshot({ path: path.join(outDir, 'speech-diagnostics.png') });
   await page.locator('#voice-dialog').getByRole('button', { name: 'Done' }).click();
   await page.waitForSelector('.loading-status-banner[data-phase="ready"]');
   await page.screenshot({ path: path.join(outDir, 'parent-voice-pack-ready.png') });

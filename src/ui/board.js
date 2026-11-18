@@ -87,13 +87,7 @@ export function boardView(state, actions) {
                 <button
                   type="button"
                   class="audio-unlock-btn"
-                  @pointerdown=${() => actions.onUnlockAudio()}
-                  @keydown=${(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      actions.onUnlockAudio();
-                    }
-                  }}
+                  @click=${() => actions.onUnlockAudio()}
                 >
                   ${renderIcon('volume', 'unlock-vol-svg')}
                   <span>

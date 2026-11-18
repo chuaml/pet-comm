@@ -1,7 +1,9 @@
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, vi } from 'vitest';
+import { resetSpeechWarmupForTests } from '../src/audio/ttsWarmup.js';
 import { resetVoicePackLoaderForTests } from '../src/audio/voicePackLoader.js';
+import { resetSpeechDiagnosticsForTests } from '../src/state/speechDiagnostics.js';
 import { resetStorageForTests } from '../src/storage/db.js';
 
 if (typeof globalThis.SpeechSynthesisUtterance === 'undefined') {
@@ -23,6 +25,8 @@ if (typeof globalThis.SpeechSynthesisUtterance === 'undefined') {
 beforeEach(async () => {
   await resetStorageForTests();
   resetVoicePackLoaderForTests();
+  resetSpeechWarmupForTests();
+  resetSpeechDiagnosticsForTests();
   globalThis.indexedDB = new IDBFactory();
   document.body.innerHTML = '<div id="test-root"></div>';
 });

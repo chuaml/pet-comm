@@ -74,6 +74,50 @@ describe('boardView & hold-unlock UI interactions', () => {
     pads[0].dispatchEvent(new PointerEvent('pointerdown', { button: 0, bubbles: true }));
     expect(actions.onPetPress).toHaveBeenCalledTimes(1);
     expect(actions.onPetPress).toHaveBeenCalledWith(buttons[0]);
+
+    // Activation banner unlocks on click (touch grants activation on release), not on pointerdown
+    const unlockBtn = document.querySelector('.audio-unlock-btn');
+    unlockBtn.dispatchEvent(new PointerEvent('pointerdown', { button: 0, bubbles: true }));
+    expect(actions.onUnlockAudio).not.toHaveBeenCalled();
+    unlockBtn.click();
+    expect(actions.onUnlockAudio).toHaveBeenCalledTimes(1);
+  });
+
+  it('replays the first touch on pointerup only while the page has never been activated', () => {
+    const buttons = createDefaultButtons(1000);
+    const actions = makeStubActions();
+    const activation = { hasBeenActive: false };
+    Object.defineProperty(navigator, 'userActivation', { value: activation, configurable: true });
+    try {
+      render(boardView(makeBaseState({ buttons }), actions), document.getElementById('test-root'));
+      const pad = document.querySelector('.pet-pad');
+      const fire = (type, pointerId) =>
+        pad.dispatchEvent(new PointerEvent(type, { button: 0, pointerId, bubbles: true }));
+
+      // First touch: pointerdown is not activated, the release is
+      fire('pointerdown', 7);
+      activation.hasBeenActive = true;
+      fire('pointerup', 7);
+      expect(actions.onPetPress).toHaveBeenCalledTimes(1);
+      expect(actions.onPreviewButton).toHaveBeenCalledTimes(1);
+      expect(actions.onPreviewButton).toHaveBeenCalledWith(buttons[0]);
+
+      // Later touches are already activated on pointerdown: no replay
+      fire('pointerdown', 8);
+      fire('pointerup', 8);
+      expect(actions.onPetPress).toHaveBeenCalledTimes(2);
+      expect(actions.onPreviewButton).toHaveBeenCalledTimes(1);
+
+      // A cancelled first touch is not replayed
+      activation.hasBeenActive = false;
+      fire('pointerdown', 9);
+      fire('pointercancel', 9);
+      activation.hasBeenActive = true;
+      fire('pointerup', 9);
+      expect(actions.onPreviewButton).toHaveBeenCalledTimes(1);
+    } finally {
+      delete navigator.userActivation;
+    }
   });
 
   it('unlocks Parent Mode after holding corner lock for 3000ms and cancels on drift', () => {

@@ -138,6 +138,8 @@ export function voiceEngineSectionView(state, actions) {
               </button>
               <span class="field-hint">
                 Downloads in the background &amp; caches in IndexedDB while current audio stays active.
+                Recommended on tablets and Chromebooks: preset words then play instantly, even when the
+                device voice is slow to wake after a long idle.
               </span>
             </div>
           `

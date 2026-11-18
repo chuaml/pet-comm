@@ -57,8 +57,9 @@ describe('ttsVoice local-first ranking & race-free speech synthesis', () => {
     expect(utterances[0].rate).toBe(0.92);
     expect(utterances[0].volume).toBe(0.8);
 
-    // Busy cutover waits 20ms after cancel() before speaking
+    // Busy cutover (utterance already started) waits 20ms after cancel() before speaking
     mockSynth.speaking = true;
+    utterances[0].onstart();
     speakTts('Water');
     expect(cancelSpy).toHaveBeenCalledTimes(1);
     expect(utterances).toHaveLength(1);

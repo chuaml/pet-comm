@@ -6,6 +6,12 @@ Offline-first, zero-latency PWA soundboard that lets dogs and cats "talk" by pre
 
 If your pet stops pressing on their own, set **Remind every (sec, 0 = off)** in Parent Mode. After that many idle seconds in Pet Mode, the last pressed button pulses with a glowing ring for about 2.4 s, and repeats until a button is pressed. It is off by default, silent, and never moves a button out of its slot.
 
+## Slow first word after idle
+
+Tablets and Chromebooks unload their speech engine when it is unused, so the first spoken word after a long idle can lag. The app wakes the engine silently when the soundboard is activated and about once a minute while Pet Mode is on screen with the device voice, and it no longer restarts the engine's wake-up on every press. For preset words, loading the Human Voice Pack (Parent Mode → Voice Tune) avoids the device voice entirely.
+
+To check a device, open Voice Tune → **Speech diagnostics**: it shows how long the device voice took to start after each press and the last speech error, with a **Copy report** button. Nothing in the report is stored or sent anywhere.
+
 ## Development
 
 Requires Node `>= 26.13.0`.

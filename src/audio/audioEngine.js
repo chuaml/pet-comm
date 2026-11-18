@@ -1,5 +1,6 @@
 import { normalizeVoiceSettings } from '../utils/presets.js';
 import { cancelTts, speakTts, warmSpeechVoices } from './ttsVoice.js';
+import { primeSpeechEngine } from './ttsWarmup.js';
 import { ensureVoicePackDecoded, playHumanVoicePackPhrase } from './voicePackLoader.js';
 
 const SPLIT_PAW_GUARD_MS = 100;
@@ -94,6 +95,7 @@ export async function preloadAllAudio(audioMap) {
 
 export async function unlockAudioEngine() {
   warmSpeechVoices();
+  primeSpeechEngine();
   const ctx = ensureAudioContext();
   if (ctx) {
     if (ctx.state === 'suspended') {

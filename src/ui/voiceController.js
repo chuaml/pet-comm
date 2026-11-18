@@ -14,6 +14,7 @@ import {
   progressLoadingTask,
   VOICE_PACK_TASK_ID,
 } from '../state/loadingStatus.js';
+import { formatSpeechReport } from '../state/speechDiagnostics.js';
 import { saveSettings } from '../storage/db.js';
 import { normalizeSettings } from '../utils/defaults.js';
 import { DEFAULT_VOICE_SETTINGS, VOICE_PRESETS } from '../utils/presets.js';
@@ -143,6 +144,24 @@ export function createVoiceActions(state, setState) {
     onPreviewVoiceSample(word) {
       resumeAudioContextSync();
       speakTtsFallback(word, state.settings);
+    },
+
+    onRefreshSpeechDiagnostics() {
+      setState({ speechReportStatus: '' });
+    },
+
+    async onCopySpeechReport() {
+      const report = formatSpeechReport({ voices: state.availableVoices, settings: state.settings });
+      let speechReportStatus = 'Copy is not available here. Select the text above and copy it by hand.';
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(report);
+          speechReportStatus = 'Report copied.';
+        } catch {
+          // Keep the manual-copy message
+        }
+      }
+      setState({ speechReportStatus });
     },
   };
 }

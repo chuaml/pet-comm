@@ -195,3 +195,47 @@ input:checked + .icon-choice-label {
   background: var(--sw-bg);
   border: 2px solid var(--sw-border);
 }
+
+.speech-diag-summary {
+  cursor: pointer;
+  font-weight: 700;
+  min-block-size: 44px;
+  align-content: center;
+}
+
+.speech-diag-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin-block: 0.6rem;
+}
+
+.speech-diag-list dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.speech-diag-list dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.speech-diag-report {
+  inline-size: 100%;
+  padding: 0.5rem;
+  border-radius: 0.55rem;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  background: #0b192e;
+  color: var(--text-main);
+  font: 0.75rem/1.4 ui-monospace, monospace;
+  resize: vertical;
+}
+
+.speech-diag-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-block-start: 0.5rem;
+}

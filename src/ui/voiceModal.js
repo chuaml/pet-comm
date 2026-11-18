@@ -4,6 +4,7 @@ import { isVoicePackReady } from '../audio/voicePackLoader.js';
 import { matchVoicePresetId, VOICE_PRESETS, VOICE_SAMPLE_WORDS } from '../utils/presets.js';
 import { renderIcon } from './icons.js';
 import { voiceEngineSectionView } from './loadingStatusView.js';
+import { speechDiagnosticsView } from './speechDiagnosticsView.js';
 
 function renderSliderField({ id, name, label, min, max, step, value, readout, valueText, hint, onInput }) {
   const styleVars = `--attr-min:${min};--attr-max:${max};--control-value:${value};`;
@@ -178,6 +179,8 @@ export function voiceDialogView(state, actions) {
             )}
           </div>
         </section>
+
+        ${speechDiagnosticsView(state, actions)}
 
         <div class="dialog-footer voice-dialog-footer">
           <button type="button" class="slot-btn" @click=${actions.onResetVoiceDefaults}>

@@ -1,4 +1,12 @@
+import { markSpeechOutcome, recordSpeechAttempt } from '../state/speechDiagnostics.js';
 import { DEFAULT_VOICE_SETTINGS, normalizeVoiceSettings } from '../utils/presets.js';
+import {
+  deferUntilSpeechSettles,
+  dropSpeechWaiter,
+  isPrimerUnstarted,
+  isSpeechUnstarted,
+  submitUtterance,
+} from './ttsWarmup.js';
 
 const NOVELTY_VOICE_RE =
   /\b(zarvox|trinoids|whisper|albert|bad news|good news|bells|boing|bubbles|cellos|deranged|hysterical|organ|pipe organ|fred|ralph|junior|bahh|jester|wobble|superstar|espeak|robot|novelty)\b/i;
@@ -139,6 +147,9 @@ export function cancelTts() {
   activeUtterance = null;
   const synth = getSpeechSynth();
   if (!synth) return;
+  // A silent warm-up that has not started is left alone: cancelling it would restart a cold engine.
+  if (isPrimerUnstarted(synth)) return;
+  dropSpeechWaiter();
   try {
     if (synth.speaking || synth.pending) synth.cancel();
   } catch {
@@ -154,14 +165,10 @@ export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS) {
   clearPendingTimer();
 
   const synth = getSpeechSynth();
-  if (!synth || typeof SpeechSynthesisUtterance === 'undefined') {
-    return false;
-  }
+  if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return false;
 
   try {
-    if (synth.paused && typeof synth.resume === 'function') {
-      synth.resume();
-    }
+    if (synth.paused && typeof synth.resume === 'function') synth.resume();
 
     const cfg = normalizeVoiceSettings(voiceSettings);
     const voices = listAvailableVoices();
@@ -171,9 +178,10 @@ export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS) {
         : voices[0] || null;
 
     const wasBusy = Boolean(synth.speaking || synth.pending);
+    const attempt = recordSpeechAttempt(phrase, selectedVoice);
 
     const dispatchUtterance = () => {
-      if (seq !== speakSeq) return;
+      if (seq !== speakSeq) return markSpeechOutcome(attempt, 'superseded');
       try {
         const utterance = new SpeechSynthesisUtterance(phrase);
         activeUtterance = utterance;
@@ -184,22 +192,32 @@ export function speakTts(text, voiceSettings = DEFAULT_VOICE_SETTINGS) {
         utterance.pitch = cfg.ttsPitch;
         utterance.rate = cfg.ttsRate;
         utterance.volume = cfg.ttsVolume;
-        utterance.onend = () => {
+        const onDone = () => {
           if (activeUtterance === utterance) activeUtterance = null;
         };
-        utterance.onerror = () => {
-          if (activeUtterance === utterance) activeUtterance = null;
-        };
-        synth.speak(utterance);
+        submitUtterance(synth, utterance, { attempt, onDone });
       } catch {
-        // Ignore browser utterance errors
+        markSpeechOutcome(attempt, 'error:speak-threw');
       }
     };
 
-    if (wasBusy) {
+    const cutOver = () => {
       synth.cancel();
       pendingSpeakTimer = setTimeout(dispatchUtterance, 20);
       pendingSpeakTimer.unref?.();
+    };
+
+    if (wasBusy && isSpeechUnstarted(synth)) {
+      // The engine has not begun the queued utterance (cold start). Cancelling now would restart
+      // that wait on every press, so remember only this latest phrase and speak it once it settles.
+      attempt.queued = true;
+      deferUntilSpeechSettles(synth, (reason, inFlightText) => {
+        if (seq !== speakSeq) return markSpeechOutcome(attempt, 'superseded');
+        if (reason === 'start' && inFlightText === phrase) return markSpeechOutcome(attempt, 'merged');
+        return reason === 'start' || reason === 'stall' ? cutOver() : dispatchUtterance();
+      });
+    } else if (wasBusy) {
+      cutOver();
     } else {
       dispatchUtterance();
     }
