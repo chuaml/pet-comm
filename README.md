@@ -2,6 +2,22 @@
 
 Offline-first, zero-latency PWA soundboard that lets dogs and cats "talk" by pressing large on-screen buttons. Vanilla JS + `lit-html`, built with Vite, deployed on Cloudflare Pages. Architecture rules and constraints live in [AGENTS.md](AGENTS.md).
 
+## Parent lock
+
+Pet Mode shows a small lock in a strip above the buttons. To open Parent Mode, **hold the lock for about half a second, slide it left to the end of the track, and let go there**. A tap, a long press without a slide, or letting go early does nothing, so paws and noses do not open the settings. On a keyboard, hold Enter on the lock, then press the Left Arrow.
+
+## Button gap
+
+**Button Gap** in Parent Mode sets the empty space between buttons: Compact, Comfortable (default), Wide, or Extra Wide. A wider gap makes it less likely that one paw presses two buttons. Buttons keep their positions and get slightly smaller.
+
+## Pet-proofing the device
+
+Pet Mode blocks pinch zoom. A web app cannot block the swipe that leaves the app, the app switcher, Control Centre, or the notification shade; the device has to do that. The same steps are in Parent Mode under **Pet-proof**. Menu names vary between OS versions, so search Settings for the feature name if a path does not match.
+
+- **iPhone / iPad — Guided Access.** Settings › Accessibility › Guided Access: turn it on and set a passcode. Open Pet Comm, triple-click the side button (top button on iPad, or the Home button), and tap Start. Triple-click again and enter the passcode to end. Set Display Auto-Lock to Never in the Guided Access settings to keep the screen on.
+- **Android (Pixel and most phones) — App pinning.** Search Settings for "App pinning", turn it on, and turn on "Ask for PIN before unpinning". Open Pet Comm, open Recents, tap the app icon above the preview, and tap Pin. Swipe up and hold to unpin (or hold Back and Overview with 3-button navigation). A long swipe-and-hold still unpins, so this is weaker than Guided Access.
+- **Samsung Galaxy — Pin app.** Settings › Security and privacy › More security settings › "Allow apps to be pinned". Open Pet Comm, open Recents, tap the app icon, and tap "Pin this app". Hold Recents and Back together to unpin.
+
 ## Attention cue (optional)
 
 If your pet stops pressing on their own, set **Remind every (sec, 0 = off)** in Parent Mode. After that many idle seconds in Pet Mode, the last pressed button pulses with a glowing ring for about 2.4 s, and repeats until a button is pressed. It is off by default, silent, and never moves a button out of its slot.

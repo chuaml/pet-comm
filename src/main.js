@@ -7,14 +7,17 @@ import { listAvailableVoices, subscribeVoicesChanged, warmSpeechVoices } from '.
 import { createSpeechWarmActions } from './audio/ttsWarmup.js';
 import { hydrateCachedVoicePack } from './audio/voicePackLoader.js';
 import { completeLoadingTask, VOICE_PACK_TASK_ID } from './state/loadingStatus.js';
-import { appendActivityLog, initStorage, saveButtons, saveSettings } from './storage/db.js';
+import { appendActivityLog, initStorage, saveButtons } from './storage/db.js';
 import { createActivityActions } from './ui/activityController.js';
 import { activityDialogView, installLightDismissFallback } from './ui/activityModal.js';
 import { createAttentionCueActions } from './ui/attentionCue.js';
 import { boardView } from './ui/board.js';
+import { createBoardSettingsActions } from './ui/boardSettings.js';
 import { editorDialogView } from './ui/editor.js';
 import { createEditorActions } from './ui/editorController.js';
-import { createHoldUnlockController } from './ui/lock.js';
+import { installGestureGuard } from './ui/gestureGuard.js';
+import { createHoldUnlockController, LOCK_IDLE } from './ui/lock.js';
+import { petProofDialogView } from './ui/petProofView.js';
 import { createVoiceActions } from './ui/voiceController.js';
 import { voiceDialogView } from './ui/voiceModal.js';
 import { autoColorBoardButtons } from './utils/autoColor.js';
@@ -28,6 +31,7 @@ import './styles/voiceAndPresets.css';
 import './styles/colorPicker.css';
 import './styles/loadingStatus.css';
 import './styles/attentionCue.css';
+import './styles/petProof.css';
 
 const appRoot = document.getElementById('app');
 let wakeLockSentinel = null;
@@ -37,7 +41,7 @@ const supportsWebInstall =
   typeof Navigator !== 'undefined' && typeof Navigator.prototype.install === 'function';
 
 const state = {
-  mode: 'pet', audioUnlocked: false, lockProgress: 0,
+  mode: 'pet', audioUnlocked: false, lock: LOCK_IDLE, petProofOpen: false,
   settings: { ...DEFAULT_SETTINGS }, buttons: [], audioMap: new Map(), logs: [],
   availableVoices: [], loadingTasks: {}, flashingButtonId: null, attentionButtonId: null, movingButtonId: null,
   editorDraft: null, voiceModalOpen: false, activityModalOpen: false, speechReportStatus: '',
@@ -48,7 +52,7 @@ const state = {
 function syncModalElement(id, shouldOpen) {
   const dialog = document.getElementById(id);
   if (!dialog) return;
-  if (id === 'activity-dialog' || id === 'voice-dialog') installLightDismissFallback(dialog);
+  if (id !== 'editor-dialog') installLightDismissFallback(dialog);
   if (shouldOpen && !dialog.open) dialog.showModal();
   else if (!shouldOpen && dialog.open) dialog.close();
 }
@@ -56,15 +60,14 @@ function syncModalElement(id, shouldOpen) {
 function setState(patch) {
   Object.assign(state, patch);
   render(
-    html`${boardView(state, actions)}${editorDialogView(state, actions)}${voiceDialogView(
-      state,
-      actions
-    )}${activityDialogView(state, actions)}`,
+    html`${boardView(state, actions)}${editorDialogView(state, actions)}${voiceDialogView(state, actions)}
+      ${activityDialogView(state, actions)}${petProofDialogView(state, actions)}`,
     appRoot
   );
   syncModalElement('editor-dialog', Boolean(state.editorDraft));
   syncModalElement('voice-dialog', state.voiceModalOpen);
   syncModalElement('activity-dialog', state.activityModalOpen);
+  syncModalElement('petproof-dialog', state.petProofOpen);
   attentionActions.syncAttentionCue();
   speechWarm.syncSpeechWarm();
 }
@@ -81,11 +84,11 @@ async function syncWakeLock() {
 }
 
 const lockController = createHoldUnlockController({
-  holdMs: 3000,
-  onProgress: (pct) => setState({ lockProgress: pct }),
+  holdMs: 600,
+  onProgress: (lock) => setState({ lock }),
   onUnlock: () => {
     stopActiveAudio();
-    setState({ mode: 'parent', lockProgress: 0, movingButtonId: null });
+    setState({ mode: 'parent', lock: LOCK_IDLE, movingButtonId: null });
     syncWakeLock();
   },
 });
@@ -94,6 +97,7 @@ const editorActions = createEditorActions(state, setState);
 const voiceActions = createVoiceActions(state, setState);
 const activityActions = createActivityActions(state, setState);
 const attentionActions = createAttentionCueActions(state, setState);
+const boardSettingsActions = createBoardSettingsActions(state, setState);
 const speechWarm = createSpeechWarmActions(state);
 
 const actions = {
@@ -101,6 +105,7 @@ const actions = {
   ...voiceActions,
   ...activityActions,
   ...attentionActions,
+  ...boardSettingsActions,
   lockController,
 
   async onUnlockAudio() {
@@ -144,20 +149,9 @@ const actions = {
       editorDraft: null,
       voiceModalOpen: false,
       activityModalOpen: false,
+      petProofOpen: false,
     });
     syncWakeLock();
-  },
-
-  async onChangeDensity(gridDensity) {
-    const settings = { ...state.settings, gridDensity };
-    setState({ settings, movingButtonId: null });
-    await saveSettings(settings);
-  },
-
-  async onChangeCooldown(cooldownMs) {
-    const settings = { ...state.settings, cooldownMs };
-    setState({ settings });
-    await saveSettings(settings);
   },
 
   async onAutoColorBoard() {
@@ -207,6 +201,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
   deferredInstallPrompt = e;
   if (!supportsWebInstall) setState({ canInstallApp: true });
 });
+
+installGestureGuard(() => state.mode === 'pet');
 
 document.addEventListener('visibilitychange', () => {
   syncWakeLock();

@@ -1,14 +1,10 @@
 import { html } from 'lit-html';
-import {
-  buildGridSlots,
-  COOLDOWN_OPTIONS,
-  GRID_DENSITIES,
-  resolveButtonColors,
-} from '../utils/defaults.js';
+import { buildGridSlots, COOLDOWN_OPTIONS, GRID_DENSITIES, resolveButtonColors } from '../utils/defaults.js';
 import { attentionCueControlView } from './attentionCue.js';
 import { renderIcon } from './icons.js';
 import { parentLoadingStatusView } from './loadingStatusView.js';
-import { lockButtonView } from './lock.js';
+import { gapControlView } from './boardSettings.js';
+import { lockButtonView } from './lockView.js';
 import { renderPetPad } from './petPad.js';
 
 function renderParentSlot(btn, slotIdx, movingButtonId, actions) {
@@ -81,33 +77,39 @@ export function boardView(state, actions) {
   if (state.mode === 'pet') {
     return html`
       <main class="pet-viewport">
-        ${!state.audioUnlocked
-          ? html`
-              <div class="audio-unlock-banner" role="region" aria-label="Soundboard audio activation">
-                <button
-                  type="button"
-                  class="audio-unlock-btn"
-                  @click=${() => actions.onUnlockAudio()}
-                >
-                  ${renderIcon('volume', 'unlock-vol-svg')}
-                  <span>
-                    <strong>Tap to Activate Soundboard</strong>
-                    <small>Enables instant zero-latency audio &amp; keeps screen awake</small>
-                  </span>
-                </button>
-              </div>
-            `
-          : null}
+        <div class="lock-strip">
+          ${!state.audioUnlocked
+            ? html`
+                <div class="audio-unlock-banner" role="region" aria-label="Soundboard audio activation">
+                  <button
+                    type="button"
+                    class="audio-unlock-btn"
+                    @click=${() => actions.onUnlockAudio()}
+                  >
+                    ${renderIcon('volume', 'unlock-vol-svg')}
+                    <span>
+                      <strong>Tap to Activate Soundboard</strong>
+                      <small>Enables instant zero-latency audio &amp; keeps screen awake</small>
+                    </span>
+                  </button>
+                </div>
+              `
+            : null}
+          ${lockButtonView(state.lock, actions.lockController)}
+        </div>
 
-        <section class="soundboard-grid" data-density=${density} aria-label="Pet communication buttons">
+        <section
+          class="soundboard-grid"
+          data-density=${density}
+          data-gap=${state.settings.padGap}
+          aria-label="Pet communication buttons"
+        >
           ${slots.map((btn) =>
             btn
               ? renderPetPad(btn, state.flashingButtonId === btn.id, state.attentionButtonId === btn.id, actions)
               : html`<div class="pet-pad-spacer" aria-hidden="true"></div>`
           )}
         </section>
-
-        ${lockButtonView(state.lockProgress, actions.lockController)}
       </main>
     `;
   }
@@ -151,6 +153,7 @@ export function boardView(state, actions) {
               )}
             </select>
           </label>
+          ${gapControlView(state, actions)}
           ${attentionCueControlView(state, actions)}
 
           <button type="button" class="toolbar-btn" @click=${actions.onAutoColorBoard}>
@@ -161,6 +164,9 @@ export function boardView(state, actions) {
           </button>
           <button type="button" class="toolbar-btn" @click=${actions.onOpenActivityModal}>
             ${renderIcon('chart', 'btn-inline-svg')} Logs &amp; Backup
+          </button>
+          <button type="button" class="toolbar-btn" @click=${actions.onOpenPetProof}>
+            ${renderIcon('paw', 'btn-inline-svg')} Pet-proof
           </button>
           <button
             type="button"

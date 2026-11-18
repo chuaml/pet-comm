@@ -140,7 +140,7 @@ describe('attention cue board rendering', () => {
   const baseState = (overrides) => ({
     mode: 'pet',
     audioUnlocked: true,
-    lockProgress: 0,
+    lock: { phase: 'idle', pct: 0, travelPx: 0 },
     settings: { ...DEFAULT_SETTINGS },
     buttons: createDefaultButtons(1000),
     flashingButtonId: null,
@@ -151,7 +151,7 @@ describe('attention cue board rendering', () => {
     ...overrides,
   });
   const lockController = {
-    onPointerDown: vi.fn(), onPointerMove: vi.fn(), onPointerEnd: vi.fn(), onKeyDown: vi.fn(), onKeyUp: vi.fn(),
+    onPointerDown: vi.fn(), onPointerMove: vi.fn(), onPointerUp: vi.fn(), onPointerCancel: vi.fn(), onBlur: vi.fn(), onKeyDown: vi.fn(), onKeyUp: vi.fn(),
   };
 
   it('marks only the target pad with data-attention in Pet Mode', () => {

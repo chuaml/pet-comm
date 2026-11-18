@@ -1,0 +1,42 @@
+.petproof-lead,
+.petproof-intro,
+.petproof-tip {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.petproof-lead {
+  color: var(--text-main);
+}
+
+.petproof-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--bg-panel);
+}
+
+.petproof-title {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--accent-yellow);
+}
+
+.petproof-intro,
+.petproof-tip {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.petproof-steps {
+  margin: 0;
+  padding-inline-start: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}

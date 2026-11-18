@@ -8,6 +8,9 @@ import {
   isValidIconId,
   nextAvailableSlot,
   normalizeGridDensity,
+  normalizePadGap,
+  normalizeSettings,
+  PAD_GAP_OPTIONS,
   PET_COLORS,
   swapOrMoveButtonSlot,
 } from '../src/utils/defaults.js';
@@ -22,6 +25,16 @@ describe('defaults & spatial grid helpers', () => {
     expect(normalizeGridDensity(6)).toBe(9);
     expect(normalizeGridDensity(16)).toBe(16);
     expect(normalizeGridDensity(20)).toBe(20);
+  });
+
+  it('defaults the pad gap to comfortable and falls back for unknown or missing values', () => {
+    expect(PAD_GAP_OPTIONS.map((o) => o.id)).toEqual(['compact', 'comfortable', 'wide', 'extra-wide']);
+    expect(DEFAULT_SETTINGS.padGap).toBe('comfortable');
+    for (const id of ['compact', 'comfortable', 'wide', 'extra-wide']) expect(normalizePadGap(id)).toBe(id);
+    for (const bad of [undefined, null, '', 'huge', 3, {}]) expect(normalizePadGap(bad)).toBe('comfortable');
+    // Settings saved before the gap option existed pick up the new default
+    expect(normalizeSettings({ gridDensity: 16, cooldownMs: 500 }).padGap).toBe('comfortable');
+    expect(normalizeSettings({ padGap: 'compact' }).padGap).toBe('compact');
   });
 
   it('seeds 14 starter presets in slots 0..13 leaving slots 14..15 open on 16-slot grid', () => {

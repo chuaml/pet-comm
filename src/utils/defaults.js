@@ -5,10 +5,18 @@ export { getColorPreset, PET_COLORS, resolveButtonColors };
 
 export const GRID_DENSITIES = [4, 9, 12, 16, 20];
 export const COOLDOWN_OPTIONS = [250, 500, 750, 1000, 1500];
+// 'compact' is the original pre-setting gap; each step up widens the dead zone between pads.
+export const PAD_GAP_OPTIONS = Object.freeze([
+  { id: 'compact', name: 'Compact' },
+  { id: 'comfortable', name: 'Comfortable' },
+  { id: 'wide', name: 'Wide' },
+  { id: 'extra-wide', name: 'Extra Wide' },
+]);
 
 export const DEFAULT_SETTINGS = Object.freeze({
   gridDensity: 16,
   cooldownMs: 500,
+  padGap: 'comfortable',
   attentionCueSec: 0,
   ...DEFAULT_VOICE_SETTINGS,
 });
@@ -25,6 +33,10 @@ export function normalizeGridDensity(density) {
   return DEFAULT_SETTINGS.gridDensity;
 }
 
+export function normalizePadGap(raw) {
+  return PAD_GAP_OPTIONS.some((option) => option.id === raw) ? raw : DEFAULT_SETTINGS.padGap;
+}
+
 export function normalizeAttentionCueSec(raw) {
   const sec = Math.round(Number(raw));
   if (!Number.isFinite(sec) || sec <= 0) return 0;
@@ -38,6 +50,7 @@ export function normalizeSettings(raw) {
     cooldownMs: Number.isFinite(cooldown)
       ? Math.min(Math.max(Math.round(cooldown), 100), 5000)
       : DEFAULT_SETTINGS.cooldownMs,
+    padGap: normalizePadGap(raw?.padGap),
     attentionCueSec: normalizeAttentionCueSec(raw?.attentionCueSec),
     ...normalizeVoiceSettings(raw),
   };

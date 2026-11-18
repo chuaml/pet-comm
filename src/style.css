@@ -44,7 +44,12 @@ body {
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Row 1 is the parent-lock strip, so the lock never overlaps a pad. Pet Mode has nothing to
+   scroll, and 'manipulation' would still allow pinch zoom, so all touch gestures are off here. */
 .pet-viewport {
+  grid-template-rows: auto minmax(0, 1fr);
+  row-gap: 0.5rem;
+  touch-action: none;
   padding-block: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-bottom));
   padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
 }
@@ -53,7 +58,20 @@ body {
   inline-size: 100%;
   block-size: 100%;
   display: grid;
-  gap: clamp(0.45rem, 1.35vmin, 1.25rem);
+  gap: var(--pad-gap, clamp(0.45rem, 1.35vmin, 1.25rem));
+}
+
+/* No data-gap (Parent Mode) and 'compact' keep the original gap above. */
+.soundboard-grid[data-gap='comfortable'] {
+  --pad-gap: clamp(0.9rem, 2.7vmin, 2.25rem);
+}
+
+.soundboard-grid[data-gap='wide'] {
+  --pad-gap: clamp(1.35rem, 4vmin, 3.25rem);
+}
+
+.soundboard-grid[data-gap='extra-wide'] {
+  --pad-gap: clamp(1.8rem, 5.5vmin, 4.5rem);
 }
 
 .soundboard-grid[data-density='4'] {
@@ -103,14 +121,16 @@ body {
   inline-size: 100%;
   block-size: 100%;
   padding-block: clamp(0.3rem, 4cqb, 0.8rem);
-  padding-inline: clamp(0.2rem, 3cqi, 0.75rem);
+  /* Viewport units, not cqi: container units on the container itself resolve against the
+     viewport, which ate ~12px a side on phones and forced labels to wrap at wider gaps. */
+  padding-inline: clamp(0.15rem, 1.2vmin, 0.75rem);
   border-radius: clamp(0.75rem, 12cqmin, var(--radius-lg));
   border: clamp(3px, 3cqmin, 6px) solid var(--pad-border, #93c5fd);
   background-color: var(--pad-bg, #0057b8);
   color: var(--pad-fg, #ffffff);
   box-shadow: 0 6px 0 rgba(0, 0, 0, 0.42), 0 12px 24px rgba(0, 0, 0, 0.35);
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
   transition: translate 0.06s ease, box-shadow 0.06s ease, filter 0.08s ease;
 }
@@ -145,7 +165,7 @@ body {
   letter-spacing: 0.01em;
   line-height: 1.08;
   text-align: center;
-  font-size: clamp(0.68rem, min(15.5cqi, 24cqb), 3.1rem);
+  font-size: clamp(0.5rem, min(15.5cqi, 24cqb), 3.1rem);
   max-inline-size: 100%;
   overflow-wrap: break-word;
 }

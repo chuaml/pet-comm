@@ -56,6 +56,40 @@ function startPreviewServer() {
   });
 }
 
+// Parent lock gesture: hold ~0.6s to arm the track, slide left to its end, release there.
+async function unlockParentMode(page, shots = null) {
+  const lock = page.locator('.corner-lock-btn');
+  const at = (clientX) => ({ pointerId: 1, button: 0, clientX, clientY: 30 });
+  await lock.dispatchEvent('pointerdown', at(600));
+  await page.waitForSelector('.corner-lock-zone[data-phase="holding"]');
+  if (shots) await page.screenshot({ path: path.join(shots, 'lock-holding.png') });
+  await page.waitForSelector('.corner-lock-zone[data-phase="armed"]', { timeout: 2000 });
+  await lock.dispatchEvent('pointermove', at(480));
+  if (shots) await page.screenshot({ path: path.join(shots, 'lock-armed.png') });
+  await lock.dispatchEvent('pointermove', at(100));
+  await lock.dispatchEvent('pointerup', at(100));
+  await page.waitForSelector('.parent-toolbar');
+}
+
+// Pet Mode geometry: grid gap in px, plus whether the lock or any pad overlaps another pad.
+function measurePetLayout(page) {
+  return page.evaluate(() => {
+    const rect = (el) => el.getBoundingClientRect();
+    const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const pads = [...document.querySelectorAll('.pet-pad')].map(rect);
+    const lock = rect(document.querySelector('.corner-lock-btn'));
+    return {
+      gap: parseFloat(getComputedStyle(document.querySelector('.soundboard-grid')).columnGap),
+      lockOverlaps: pads.filter((p) => hit(p, lock)).length,
+      padOverlaps: pads.filter((p, i) => pads.some((q, j) => i < j && hit(p, q))).length,
+      wrappedLabels: [...document.querySelectorAll('.pad-label')].filter(
+        (l) => !l.textContent.trim().includes(' ') && rect(l).height > parseFloat(getComputedStyle(l).lineHeight) * 1.5
+      ).length,
+      touchAction: getComputedStyle(document.querySelector('.pet-pad')).touchAction,
+    };
+  });
+}
+
 const server = await startPreviewServer();
 let browser;
 
@@ -84,10 +118,45 @@ try {
   await page.waitForTimeout(100);
   await page.screenshot({ path: path.join(outDir, 'pet-mode-mobile.png') });
 
+  // Tap and hold-without-slide must not unlock; the lock must never sit on a pad.
+  const lockBtn = page.locator('.corner-lock-btn');
+  await lockBtn.dispatchEvent('pointerdown', { pointerId: 1, button: 0, clientX: 600, clientY: 30 });
+  await page.waitForTimeout(1500);
+  await lockBtn.dispatchEvent('pointerup', { pointerId: 1, button: 0, clientX: 600, clientY: 30 });
+  assert.equal(await page.locator('.parent-toolbar').count(), 0, 'Hold without slide must not unlock');
+  const mobileLayout = await measurePetLayout(page);
+  assert.equal(mobileLayout.lockOverlaps, 0, 'Lock must not overlap a pad');
+  assert.equal(mobileLayout.touchAction, 'none', 'Pet pads must disable pinch zoom');
+
   await page.setViewportSize({ width: 1180, height: 820 });
-  await page.locator('.corner-lock-btn').dispatchEvent('pointerdown', { pointerId: 1, button: 0 });
-  await page.waitForTimeout(3200);
-  await page.waitForSelector('.parent-toolbar');
+  await unlockParentMode(page, outDir);
+
+  // Button Gap: each step widens the gap at every density without overlap or mid-word wrapping.
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const density of ['4', '16', '20']) {
+    await page.locator('.density-chip', { hasText: new RegExp(`^${density}$`) }).click();
+    let previousGap = 0;
+    for (const gapId of ['compact', 'comfortable', 'wide', 'extra-wide']) {
+      await page.locator('#pad-gap-select').selectOption(gapId);
+      await page.getByRole('button', { name: /Lock \(Pet Mode\)/i }).click();
+      await page.waitForSelector(`.soundboard-grid[data-gap="${gapId}"]`);
+      const layout = await measurePetLayout(page);
+      assert.ok(layout.gap > previousGap, `Gap ${gapId}@${density} (${layout.gap}px) must exceed ${previousGap}px`);
+      assert.deepEqual(
+        [layout.lockOverlaps, layout.padOverlaps, layout.wrappedLabels], [0, 0, 0],
+        `Layout broken at ${gapId}@${density}: ${JSON.stringify(layout)}`
+      );
+      previousGap = layout.gap;
+      await page.screenshot({ path: path.join(outDir, `gap-${gapId}-${density}-mobile.png`) });
+      await unlockParentMode(page);
+    }
+  }
+  await page.locator('#pad-gap-select').selectOption('comfortable');
+  await page.getByRole('button', { name: /Pet-proof/i }).click();
+  await page.waitForSelector('#petproof-dialog[open]');
+  await page.screenshot({ path: path.join(outDir, 'petproof-dialog-mobile.png') });
+  await page.locator('#petproof-dialog').getByRole('button', { name: 'Done' }).click();
+  await page.setViewportSize({ width: 1180, height: 820 });
 
   await page.locator('.density-chip', { hasText: '20' }).click();
   await page.waitForTimeout(100);
@@ -150,9 +219,7 @@ try {
   );
   await page.waitForSelector('.pet-pad[data-attention="true"]', { state: 'detached', timeout: 4000 });
   await page.setViewportSize({ width: 1180, height: 820 });
-  await page.locator('.corner-lock-btn').dispatchEvent('pointerdown', { pointerId: 1, button: 0 });
-  await page.waitForTimeout(3200);
-  await page.waitForSelector('.parent-toolbar');
+  await unlockParentMode(page);
   await page.locator('#attention-cue-input').fill('0');
   await page.locator('#attention-cue-input').dispatchEvent('change');
 

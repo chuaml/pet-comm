@@ -4,27 +4,48 @@
   initial-value: 0;
 }
 
+/* Reserved strip above the pet grid: the lock (and the one-time activation banner) live here
+   so neither ever covers a pad. Fixed height keeps pad positions stable when the banner leaves. */
+.lock-strip {
+  container-type: inline-size;
+  position: relative;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  block-size: 3.5rem;
+  touch-action: none;
+}
+
 .audio-unlock-banner {
-  position: absolute;
-  inset-block-start: max(0.85rem, env(safe-area-inset-top));
-  inset-inline-start: 50%;
-  translate: -50% 0;
-  z-index: 20;
-  max-inline-size: min(92%, 32rem);
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .audio-unlock-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.7rem 1.1rem;
+  max-inline-size: 100%;
+  min-block-size: 48px;
+  padding: 0.3rem 1rem;
   border-radius: 999px;
   border: 2px solid var(--accent-yellow);
   background: rgba(11, 31, 58, 0.94);
   color: var(--text-main);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   text-align: start;
+  white-space: nowrap;
+}
+
+@container (max-width: 40rem) {
+  .audio-unlock-btn small {
+    display: none;
+  }
 }
 
 .audio-unlock-btn strong {
@@ -46,16 +67,15 @@
 }
 
 .corner-lock-zone {
-  position: absolute;
-  inset-block-start: max(0.6rem, env(safe-area-inset-top));
-  inset-inline-end: max(0.6rem, env(safe-area-inset-right));
-  z-index: 25;
+  position: relative;
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
 .lock-hold-hint {
+  position: absolute;
+  inset-inline-end: calc(100% + 0.5rem);
   padding: 0.35rem 0.65rem;
   border-radius: 999px;
   background: rgba(11, 31, 58, 0.92);
@@ -63,6 +83,53 @@
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--accent-yellow);
+  white-space: nowrap;
+}
+
+/* Stays in the accessibility tree as a live region; only the 'holding' phase shows the pill */
+.corner-lock-zone:not([data-phase='holding']) .lock-hold-hint {
+  clip-path: inset(50%);
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  border: 0;
+}
+
+.lock-track {
+  position: absolute;
+  inset-inline-end: -4px;
+  inset-block: -4px;
+  inline-size: calc(var(--lock-travel, 0px) + 48px + 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 214, 0, 0.7);
+  background: rgba(11, 31, 58, 0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.corner-lock-zone[data-phase='armed'] .lock-track {
+  opacity: 1;
+}
+
+.lock-track-target {
+  position: absolute;
+  inset-inline-start: 2px;
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: 50%;
+  border: 3px dashed var(--accent-yellow);
+}
+
+.lock-track-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-yellow);
+  white-space: nowrap;
 }
 
 .corner-lock-btn {
@@ -73,7 +140,28 @@
   color: var(--text-muted);
   cursor: pointer;
   opacity: 0.68;
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  translate: calc(var(--slide-pct, 0) * -0.01 * var(--lock-travel, 0px)) 0;
   transition: opacity 0.15s ease, scale 0.15s ease;
+}
+
+/* Snap back when a slide is abandoned; while armed the thumb tracks the finger with no lag */
+.corner-lock-zone[data-phase='idle'] .corner-lock-btn {
+  transition: opacity 0.15s ease, scale 0.15s ease, translate 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-lock-zone[data-phase='idle'] .corner-lock-btn {
+    transition: none;
+  }
+}
+
+.corner-lock-btn[data-ready='true'] {
+  background: var(--accent-yellow);
+  color: #0b1f3a;
 }
 
 .corner-lock-btn[data-holding='true'],

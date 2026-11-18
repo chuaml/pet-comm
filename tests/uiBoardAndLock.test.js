@@ -1,14 +1,13 @@
 import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import { boardView } from '../src/ui/board.js';
-import { createHoldUnlockController } from '../src/ui/lock.js';
 import { createDefaultButtons, DEFAULT_SETTINGS } from '../src/utils/defaults.js';
 
 function makeBaseState(overrides = {}) {
   return {
     mode: 'pet',
     audioUnlocked: true,
-    lockProgress: 0,
+    lock: { phase: 'idle', pct: 0, travelPx: 0 },
     settings: { ...DEFAULT_SETTINGS },
     buttons: createDefaultButtons(1000),
     flashingButtonId: null,
@@ -26,6 +25,8 @@ function makeStubActions(overrides = {}) {
     onPetPress: vi.fn(),
     onChangeDensity: vi.fn(),
     onChangeCooldown: vi.fn(),
+    onChangeGap: vi.fn(),
+    onOpenPetProof: vi.fn(),
     onChangeAttentionCue: vi.fn(),
     onAutoColorBoard: vi.fn(),
     onOpenVoiceModal: vi.fn(),
@@ -41,9 +42,11 @@ function makeStubActions(overrides = {}) {
     lockController: {
       onPointerDown: vi.fn(),
       onPointerMove: vi.fn(),
-      onPointerEnd: vi.fn(),
+      onPointerUp: vi.fn(),
+      onPointerCancel: vi.fn(),
       onKeyDown: vi.fn(),
       onKeyUp: vi.fn(),
+      onBlur: vi.fn(),
     },
     ...overrides,
   };
@@ -120,41 +123,35 @@ describe('boardView & hold-unlock UI interactions', () => {
     }
   });
 
-  it('unlocks Parent Mode after holding corner lock for 3000ms and cancels on drift', () => {
-    vi.useFakeTimers();
-    const progresses = [];
-    const onUnlock = vi.fn();
+  it('keeps the lock in its own strip above the grid and applies the gap setting in Pet Mode only', () => {
+    const root = document.getElementById('test-root');
+    const actions = makeStubActions();
+    render(boardView(makeBaseState({ audioUnlocked: false }), actions), root);
 
-    const lockController = createHoldUnlockController({
-      holdMs: 3000,
-      maxDriftPx: 28,
-      onProgress: (p) => progresses.push(p),
-      onUnlock,
-    });
+    const viewport = document.querySelector('.pet-viewport');
+    const strip = document.querySelector('.lock-strip');
+    const grid = document.querySelector('.soundboard-grid');
+    expect([...viewport.children]).toEqual([strip, grid]);
+    expect(strip.querySelector('.corner-lock-btn')).not.toBeNull();
+    expect(strip.querySelector('.audio-unlock-banner')).not.toBeNull();
+    expect(grid.querySelector('.corner-lock-btn')).toBeNull();
+    expect(grid.getAttribute('data-gap')).toBe('comfortable');
 
-    // Drift beyond 28px cancels hold
-    lockController.onPointerDown({
-      button: 0,
-      pointerId: 1,
-      clientX: 100,
-      clientY: 100,
-      stopPropagation: vi.fn(),
-    });
-    lockController.onPointerMove({ pointerId: 1, clientX: 140, clientY: 100 });
-    vi.advanceTimersByTime(3500);
-    expect(onUnlock).not.toHaveBeenCalled();
+    const wide = makeBaseState({ settings: { ...DEFAULT_SETTINGS, padGap: 'extra-wide' } });
+    render(boardView(wide, actions), root);
+    expect(document.querySelector('.soundboard-grid').getAttribute('data-gap')).toBe('extra-wide');
 
-    // Steady 3000ms hold unlocks Parent Mode
-    lockController.onPointerDown({
-      button: 0,
-      pointerId: 2,
-      clientX: 100,
-      clientY: 100,
-      stopPropagation: vi.fn(),
-    });
-    vi.advanceTimersByTime(3100);
-    expect(onUnlock).toHaveBeenCalledTimes(1);
-    expect(progresses.some((p) => p > 0)).toBe(true);
+    // An armed lock slides its thumb along the track and never fires a pad underneath
+    const armed = makeBaseState({ lock: { phase: 'armed', pct: 95, travelPx: 186 } });
+    render(boardView(armed, actions), root);
+    const zone = document.querySelector('.corner-lock-zone');
+    expect(zone.getAttribute('data-phase')).toBe('armed');
+    expect(zone.getAttribute('style')).toContain('--lock-travel:186px;--slide-pct:95;');
+    expect(document.querySelector('.corner-lock-btn').getAttribute('data-ready')).toBe('true');
+    expect(document.querySelector('.lock-hold-hint').textContent).toContain('Slide left');
+
+    render(boardView(makeBaseState({ mode: 'parent' }), actions), root);
+    expect(document.querySelector('.soundboard-grid-parent').hasAttribute('data-gap')).toBe(false);
   });
 
   it('renders Parent Mode toolbar controls, parks overflow buttons at 4 slots, and triggers Auto-Color', () => {
@@ -178,5 +175,14 @@ describe('boardView & hold-unlock UI interactions', () => {
     );
     autoColorBtn.click();
     expect(actions.onAutoColorBoard).toHaveBeenCalledTimes(1);
+
+    const gapSelect = document.getElementById('pad-gap-select');
+    expect([...gapSelect.options].map((o) => o.value)).toEqual(['compact', 'comfortable', 'wide', 'extra-wide']);
+    gapSelect.value = 'wide';
+    gapSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(actions.onChangeGap).toHaveBeenCalledWith('wide');
+
+    [...document.querySelectorAll('.toolbar-btn')].find((b) => b.textContent.includes('Pet-proof')).click();
+    expect(actions.onOpenPetProof).toHaveBeenCalledTimes(1);
   });
 });
