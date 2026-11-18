@@ -21,10 +21,11 @@ While `npm test` (`vitest` + `happy-dom` + `fake-indexeddb`) verifies unit logic
    ```bash
    npx -y -p playwright@latest sh -c 'PW_ROOT="$(dirname "$(which playwright)")/../lib/node_modules" node .agents/skills/pet-comm-visual-verify/scripts/verify-ui.mjs --out-dir /tmp/pet-comm-verify'
    ```
-3. Inspect the generated screenshots (`pet-mode-desktop.png`, `pet-mode-mobile.png`, `parent-mode-20.png`, `voice-pack-loading-progress.png`, `voice-modal.png`, `parent-voice-pack-ready.png`, `editor-custom-rgb-modal.png`) with `read_file` and verify:
+3. Inspect the generated screenshots (`pet-mode-desktop.png`, `pet-mode-mobile.png`, `parent-mode-20.png`, `voice-pack-loading-progress.png`, `voice-modal.png`, `parent-voice-pack-ready.png`, `parent-toolbar-mobile.png`, `attention-cue-mobile.png`, `editor-custom-rgb-modal.png`) with `read_file` and verify:
    - Single-word button labels (`Outside`, `Frisbee`, etc.) stay on a single line on `390x844` mobile portrait.
    - Parent Mode `.parent-slot` action buttons (`Test`, `Move`, `Edit`) fit cleanly inside card bounds at 16 and 20 slots.
    - Sticky `.dialog-footer` bars sit flush with the bottom of `<dialog>` with zero scrolled content bleeding underneath.
+   - The attention-cue pad (`data-attention="true"`) glows and grows inside its own slot without covering neighbours, and the `Remind every` field fits the mobile Parent Mode toolbar.
    - Zero `pageerror` or uncaught console errors occurred.
 
 ## Key Implementation Pitfalls Avoided by `scripts/verify-ui.mjs`

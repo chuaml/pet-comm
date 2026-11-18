@@ -9,6 +9,7 @@ export const COOLDOWN_OPTIONS = [250, 500, 750, 1000, 1500];
 export const DEFAULT_SETTINGS = Object.freeze({
   gridDensity: 16,
   cooldownMs: 500,
+  attentionCueSec: 0,
   ...DEFAULT_VOICE_SETTINGS,
 });
 
@@ -24,6 +25,12 @@ export function normalizeGridDensity(density) {
   return DEFAULT_SETTINGS.gridDensity;
 }
 
+export function normalizeAttentionCueSec(raw) {
+  const sec = Math.round(Number(raw));
+  if (!Number.isFinite(sec) || sec <= 0) return 0;
+  return Math.min(Math.max(sec, 5), 3600);
+}
+
 export function normalizeSettings(raw) {
   const cooldown = Number(raw?.cooldownMs);
   return {
@@ -31,6 +38,7 @@ export function normalizeSettings(raw) {
     cooldownMs: Number.isFinite(cooldown)
       ? Math.min(Math.max(Math.round(cooldown), 100), 5000)
       : DEFAULT_SETTINGS.cooldownMs,
+    attentionCueSec: normalizeAttentionCueSec(raw?.attentionCueSec),
     ...normalizeVoiceSettings(raw),
   };
 }

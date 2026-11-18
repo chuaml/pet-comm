@@ -9,6 +9,7 @@ import { completeLoadingTask, VOICE_PACK_TASK_ID } from './state/loadingStatus.j
 import { appendActivityLog, initStorage, saveButtons, saveSettings } from './storage/db.js';
 import { createActivityActions } from './ui/activityController.js';
 import { activityDialogView, installLightDismissFallback } from './ui/activityModal.js';
+import { createAttentionCueActions } from './ui/attentionCue.js';
 import { boardView } from './ui/board.js';
 import { editorDialogView } from './ui/editor.js';
 import { createEditorActions } from './ui/editorController.js';
@@ -25,6 +26,7 @@ import './styles/activity.css';
 import './styles/voiceAndPresets.css';
 import './styles/colorPicker.css';
 import './styles/loadingStatus.css';
+import './styles/attentionCue.css';
 
 const appRoot = document.getElementById('app');
 let wakeLockSentinel = null;
@@ -36,7 +38,7 @@ const supportsWebInstall =
 const state = {
   mode: 'pet', audioUnlocked: false, lockProgress: 0,
   settings: { ...DEFAULT_SETTINGS }, buttons: [], audioMap: new Map(), logs: [],
-  availableVoices: [], loadingTasks: {}, flashingButtonId: null, movingButtonId: null,
+  availableVoices: [], loadingTasks: {}, flashingButtonId: null, attentionButtonId: null, movingButtonId: null,
   editorDraft: null, voiceModalOpen: false, activityModalOpen: false,
   confirmClearLogs: false, pendingImport: null, backupStatus: '',
   canInstallApp: supportsWebInstall, installingApp: false,
@@ -62,6 +64,7 @@ function setState(patch) {
   syncModalElement('editor-dialog', Boolean(state.editorDraft));
   syncModalElement('voice-dialog', state.voiceModalOpen);
   syncModalElement('activity-dialog', state.activityModalOpen);
+  attentionActions.syncAttentionCue();
 }
 
 async function syncWakeLock() {
@@ -88,11 +91,13 @@ const lockController = createHoldUnlockController({
 const editorActions = createEditorActions(state, setState);
 const voiceActions = createVoiceActions(state, setState);
 const activityActions = createActivityActions(state, setState);
+const attentionActions = createAttentionCueActions(state, setState);
 
 const actions = {
   ...editorActions,
   ...voiceActions,
   ...activityActions,
+  ...attentionActions,
   lockController,
 
   async onUnlockAudio() {
@@ -113,6 +118,7 @@ const actions = {
       voiceSettings: state.settings,
     });
     if (!outcome.played) return;
+    attentionActions.noteAttentionPress();
 
     if (flashTimer) clearTimeout(flashTimer);
     setState({ flashingButtonId: btn.id });
@@ -199,7 +205,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
   if (!supportsWebInstall) setState({ canInstallApp: true });
 });
 
-document.addEventListener('visibilitychange', () => syncWakeLock());
+document.addEventListener('visibilitychange', () => {
+  syncWakeLock();
+  attentionActions.syncAttentionCue();
+});
 
 async function bootstrap() {
   warmSpeechVoices();

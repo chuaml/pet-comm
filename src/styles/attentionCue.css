@@ -1,0 +1,35 @@
+.pet-pad[data-attention='true'] {
+  position: relative;
+  z-index: 1;
+  animation: pad-attention 0.8s ease-in-out 3;
+}
+
+@keyframes pad-attention {
+  50% {
+    scale: 1.06;
+    filter: brightness(1.2);
+    box-shadow: 0 0 0 6px var(--pad-ring, #ffd600), 0 0 2.5rem 0.5rem var(--pad-ring, #ffd600);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pad-attention {
+    50% {
+      filter: brightness(1.2);
+      box-shadow: 0 0 0 6px var(--pad-ring, #ffd600);
+    }
+  }
+}
+
+.attention-cue-input {
+  inline-size: 5.5rem;
+  min-block-size: 44px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(203, 213, 225, 0.32);
+  background: var(--bg-panel);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+}

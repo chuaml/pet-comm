@@ -5,44 +5,11 @@ import {
   GRID_DENSITIES,
   resolveButtonColors,
 } from '../utils/defaults.js';
+import { attentionCueControlView } from './attentionCue.js';
 import { renderIcon } from './icons.js';
 import { parentLoadingStatusView } from './loadingStatusView.js';
 import { lockButtonView } from './lock.js';
-
-function renderPetPad(btn, isFlashing, actions) {
-  const color = resolveButtonColors(btn);
-  const fgMode = btn.customColor && btn.customColor.fgMode !== 'custom' ? 'auto' : 'preset';
-  const styleVars = `--pad-bg:${color.bg};--pad-fg:${color.fg};--pad-border:${color.border};--pad-ring:${color.ring};`;
-
-  const onPointerDown = (e) => {
-    if (e.button !== undefined && e.button !== 0) return;
-    actions.onPetPress(btn);
-  };
-
-  const onKeyDown = (e) => {
-    if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) {
-      e.preventDefault();
-      actions.onPetPress(btn);
-    }
-  };
-
-  return html`
-    <button
-      type="button"
-      class="pet-pad"
-      data-pressed=${isFlashing ? 'true' : 'false'}
-      data-fg-mode=${fgMode}
-      style=${styleVars}
-      aria-label=${btn.label}
-      @pointerdown=${onPointerDown}
-      @keydown=${onKeyDown}
-      @contextmenu=${(e) => e.preventDefault()}
-    >
-      <span class="pad-icon-wrap">${renderIcon(btn.iconId, 'pad-icon')}</span>
-      <span class="pad-label">${btn.label}</span>
-    </button>
-  `;
-}
+import { renderPetPad } from './petPad.js';
 
 function renderParentSlot(btn, slotIdx, movingButtonId, actions) {
   const isMoveMode = Boolean(movingButtonId);
@@ -141,7 +108,7 @@ export function boardView(state, actions) {
         <section class="soundboard-grid" data-density=${density} aria-label="Pet communication buttons">
           ${slots.map((btn) =>
             btn
-              ? renderPetPad(btn, state.flashingButtonId === btn.id, actions)
+              ? renderPetPad(btn, state.flashingButtonId === btn.id, state.attentionButtonId === btn.id, actions)
               : html`<div class="pet-pad-spacer" aria-hidden="true"></div>`
           )}
         </section>
@@ -190,6 +157,7 @@ export function boardView(state, actions) {
               )}
             </select>
           </label>
+          ${attentionCueControlView(state, actions)}
 
           <button type="button" class="toolbar-btn" @click=${actions.onAutoColorBoard}>
             ${renderIcon('palette', 'btn-inline-svg')} Auto-Color

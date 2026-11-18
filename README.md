@@ -2,6 +2,10 @@
 
 Offline-first, zero-latency PWA soundboard that lets dogs and cats "talk" by pressing large on-screen buttons. Vanilla JS + `lit-html`, built with Vite, deployed on Cloudflare Pages. Architecture rules and constraints live in [AGENTS.md](AGENTS.md).
 
+## Attention cue (optional)
+
+If your pet stops pressing on their own, set **Remind every (sec, 0 = off)** in Parent Mode. After that many idle seconds in Pet Mode, the last pressed button pulses with a glowing ring for about 2.4 s, and repeats until a button is pressed. It is off by default, silent, and never moves a button out of its slot.
+
 ## Development
 
 Requires Node `>= 26.13.0`.

@@ -113,6 +113,45 @@ try {
   await page.screenshot({ path: path.join(outDir, 'parent-voice-pack-ready.png') });
   await page.locator('.loading-status-banner').getByRole('button', { name: /Switch to Human Voice/i }).click();
 
+  // Attention cue: 5s idle reminder pulses the last pressed pad inside its own slot.
+  await page.locator('#attention-cue-input').fill('5');
+  await page.locator('#attention-cue-input').dispatchEvent('change');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: path.join(outDir, 'parent-toolbar-mobile.png') });
+  await page.getByRole('button', { name: /Lock \(Pet Mode\)/i }).click();
+  await page.locator('.pet-pad').nth(5).dispatchEvent('pointerdown', { button: 0 });
+  assert.equal(await page.locator('.pet-pad[data-attention="true"]').count(), 0);
+  await page.waitForSelector('.pet-pad[data-attention="true"]', { timeout: 8000 });
+  // Capture near the peak of the 0.8s pulse; a fixed delay lands on the trough and shows no glow.
+  await page.waitForFunction(
+    () => Number(getComputedStyle(document.querySelector('.pet-pad[data-attention="true"]')).scale) > 1.045,
+    null,
+    { polling: 'raf', timeout: 2000 }
+  );
+  await page.screenshot({ path: path.join(outDir, 'attention-cue-mobile.png') });
+  const overlap = await page.evaluate(() => {
+    const pads = [...document.querySelectorAll('.pet-pad')];
+    const cue = document.querySelector('.pet-pad[data-attention="true"]').getBoundingClientRect();
+    return pads.filter((pad) => {
+      if (pad.dataset.attention === 'true') return false;
+      const r = pad.getBoundingClientRect();
+      return r.left < cue.right && r.right > cue.left && r.top < cue.bottom && r.bottom > cue.top;
+    }).length;
+  });
+  assert.equal(overlap, 0, 'Pulsing pad must stay inside its own grid slot');
+  assert.equal(
+    await page.locator('.pet-pad[data-attention="true"]').getAttribute('aria-label'),
+    await page.locator('.pet-pad').nth(5).getAttribute('aria-label')
+  );
+  await page.waitForSelector('.pet-pad[data-attention="true"]', { state: 'detached', timeout: 4000 });
+  await page.setViewportSize({ width: 1180, height: 820 });
+  await page.locator('.corner-lock-btn').dispatchEvent('pointerdown', { pointerId: 1, button: 0 });
+  await page.waitForTimeout(3200);
+  await page.waitForSelector('.parent-toolbar');
+  await page.locator('#attention-cue-input').fill('0');
+  await page.locator('#attention-cue-input').dispatchEvent('change');
+
   await page.locator('.parent-slot-empty').first().click();
   await page.waitForSelector('#editor-dialog[open]');
   await page.locator('.preset-type-chip', { hasText: 'Frisbee' }).click();
